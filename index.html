@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>しゅうかく見分け隊 | Harvest Sort Patrol</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html, body { height:100%; }
+  body {
+    font-family:"Hiragino Maru Gothic ProN","Hiragino Sans","Noto Sans JP",sans-serif;
+    background: linear-gradient(180deg,#79b5e0 0%,#a8d3f0 34%,#f7e3ac 62%,#e8c877 100%);
+    display:flex; align-items:center; justify-content:center;
+    min-height:100vh; overflow:hidden; user-select:none; -webkit-user-select:none;
+  }
+  #wrap { position:relative; width:min(96vw,480px); }
+  #stage {
+    position:relative; width:100%; aspect-ratio: 2/3;
+    border-radius:18px; overflow:hidden;
+    box-shadow:0 18px 50px rgba(60,40,0,.35), 0 0 0 4px #7a4a21, 0 0 0 8px #a06a35;
+    background:#8ec9ee;
+  }
+  canvas { display:block; width:100%; height:100%; touch-action:none; cursor:none; }
+  .overlay {
+    position:absolute; inset:0; display:flex; flex-direction:column;
+    align-items:center; justify-content:center; text-align:center;
+    background:rgba(43,26,8,.55); backdrop-filter: blur(2px);
+    padding:20px; z-index:5;
+  }
+  .overlay.hidden { display:none; }
+  .sign {
+    background:linear-gradient(180deg,#a9713a,#8a5527);
+    border:3px solid #6e421c; border-radius:14px;
+    padding:8px 22px 10px; color:#fff7e6;
+    box-shadow:0 6px 0 #5d3715, inset 0 1px 0 rgba(255,255,255,.35);
+    margin-bottom:14px;
+  }
+  .sign h1 { font-size:clamp(24px,7vw,36px); letter-spacing:.04em; text-shadow:0 2px 0 rgba(0,0,0,.3); }
+  .sign .en { font-size:clamp(11px,3vw,14px); opacity:.9; letter-spacing:.18em; }
+  .panel {
+    background:#fff8ea; border-radius:14px; padding:14px 18px;
+    max-width:92%; color:#4a2f14; box-shadow:0 8px 24px rgba(0,0,0,.3);
+    font-size:clamp(13px,3.6vw,15px); line-height:1.7;
+  }
+  .legend { display:flex; gap:14px; justify-content:center; margin:10px 0 4px; flex-wrap:wrap; }
+  .legend div { font-size:clamp(12px,3.4vw,14px); font-weight:700; }
+  .dot { display:inline-block; width:16px; height:16px; border-radius:50%; vertical-align:-3px; margin-right:5px; border:2px solid rgba(0,0,0,.15); }
+  .dot.ripe { background:radial-gradient(circle at 35% 30%,#ff9a8a,#e5321f 70%); }
+  .dot.unripe { background:radial-gradient(circle at 35% 30%,#b9e39a,#5da244 70%); }
+  .dot.damaged { background:radial-gradient(circle at 35% 30%,#c98d64,#8a4f27 70%); }
+  button.play {
+    margin-top:16px; font-family:inherit; font-weight:800;
+    font-size:clamp(17px,5vw,21px); color:#fff;
+    background:linear-gradient(180deg,#f0563a,#d63a1e);
+    border:none; border-radius:999px; padding:13px 42px; cursor:pointer;
+    box-shadow:0 6px 0 #9c2410, 0 10px 20px rgba(0,0,0,.35);
+    transition:transform .06s, box-shadow .06s;
+  }
+  button.play:active { transform:translateY(4px); box-shadow:0 2px 0 #9c2410; }
+  #finalScore { font-size:clamp(30px,9vw,44px); font-weight:900; color:#d63a1e; }
+  #langBtn {
+    position:absolute; top:10px; right:10px; z-index:6;
+    font-family:inherit; font-weight:700; font-size:13px;
+    background:rgba(255,248,234,.92); color:#6e421c;
+    border:2px solid #6e421c; border-radius:999px; padding:4px 12px; cursor:pointer;
+  }
+  #credit {
+    margin-top:10px; text-align:center; color:#5d4020; font-size:12px; opacity:.85;
+  }
+</style>
+</head>
+<body>
+<div id="wrap">
+  <div id="stage">
+    <canvas id="game" width="480" height="720"></canvas>
+    <button id="langBtn" type="button">EN</button>
+
+    <div class="overlay" id="titleScreen">
+      <div class="sign">
+        <h1 id="gameTitle">しゅうかく見分け隊</h1>
+        <div class="en">HARVEST SORT PATROL</div>
+      </div>
+      <div class="panel">
+        <div id="howto">落ちてくるトマトのうち、<b>熟した赤いものだけ</b>をカゴで受け止めよう。未熟なものと傷んだものは、よけて落とすのが正解。</div>
+        <div class="legend">
+          <div><span class="dot ripe"></span><span id="lgRipe">熟した赤 = 取る</span></div>
+          <div><span class="dot unripe"></span><span id="lgUnripe">青い = よける</span></div>
+          <div><span class="dot damaged"></span><span id="lgDamaged">傷んだ = よける</span></div>
+        </div>
+        <div id="controls">マウス / 指 / ←→キー でカゴを動かします</div>
+      </div>
+      <button class="play" id="startBtn" type="button">スタート</button>
+    </div>
+
+    <div class="overlay hidden" id="overScreen">
+      <div class="sign">
+        <h1 id="overTitle">しゅうかく終了！</h1>
+        <div class="en">HARVEST COMPLETE</div>
+      </div>
+      <div class="panel">
+        <div id="scoreLabel">スコア</div>
+        <div id="finalScore">0</div>
+        <div id="finalDetail"></div>
+        <div id="finalTip" style="margin-top:8px; font-weight:700;"></div>
+      </div>
+      <button class="play" id="retryBtn" type="button">もう一度</button>
+    </div>
+  </div>
+  <div id="credit">Ap Robo Educational LLC — Kiroween 2026 / Costume Contest</div>
+</div>
+<script>
+"use strict";
+const W = 480, H = 720;
+const cv = document.getElementById("game");
+const ctx = cv.getContext("2d");
+
+// ---------- i18n ----------
+const STR = {
+  ja: {
+    title: "しゅうかく見分け隊", over: "しゅうかく終了！", start: "スタート", retry: "もう一度",
+    howto: "落ちてくるトマトのうち、<b>熟した赤いものだけ</b>をカゴで受け止めよう。未熟なものと傷んだものは、よけて落とすのが正解。",
+    lgRipe: "熟した赤 = 取る", lgUnripe: "青い = よける", lgDamaged: "傷んだ = よける",
+    controls: "マウス / 指 / ←→キー でカゴを動かします",
+    score: "スコア", best: "ベスト",
+    caught: "取った数", good: "見逃し正解", miss: "ミス",
+    tipsRipe: ["真っ赤でつやつや = 熟したサイン", "へたの周りまで赤い = 完熟", "持つとずっしり重い = 実が詰まっている"],
+    tipUnripe: "青いのはまだ未熟。取らないのが正解", tipDamaged: "傷んだものは出荷できない。よけよう",
+    tipDropRipe: "熟したものを落としてしまった！", tipGoodAvoid: "見逃し正解！",
+    finalTips: ["見分けのコツ: 色の赤さと、つやを一緒に見ること", "現場でも、まず色とつやで見分けるのが基本です"]
+  },
+  en: {
+    title: "Harvest Sort Patrol", over: "Harvest Complete!", start: "START", retry: "Play Again",
+    howto: "Catch only the <b>ripe red tomatoes</b> in your basket. Let the unripe and damaged ones fall — dodging them is the right call.",
+    lgRipe: "Ripe red = CATCH", lgUnripe: "Green = DODGE", lgDamaged: "Damaged = DODGE",
+    controls: "Move the basket: mouse / touch / arrow keys",
+    score: "SCORE", best: "BEST",
+    caught: "Caught", good: "Good dodges", miss: "Misses",
+    tipsRipe: ["Deep red and glossy = ripe!", "Red all the way to the stem = fully ripe", "Heavy for its size = dense and ripe"],
+    tipUnripe: "Green means unripe — don't pick it", tipDamaged: "Damaged ones can't be shipped — dodge it",
+    tipDropRipe: "You dropped a ripe one!", tipGoodAvoid: "Good dodge!",
+    finalTips: ["Sorting tip: check the red color AND the gloss together", "On the farm, color and gloss are the first check"]
+  }
+};
+let lang = "ja";
+const T = () => STR[lang];
+
+// ---------- state ----------
+let mode = "title"; // title | play | over
+let score = 0, best = 0, combo = 0, misses = 0;
+let caught = 0, dodged = 0;
+let items = [], parts = [];
+let basketX = W / 2, targetX = W / 2;
+let spawnTimer = 0, elapsed = 0, lastTs = 0;
+let feedback = "", feedbackTimer = 0, feedbackColor = "#fff";
+let shake = 0, tipIdx = 0;
+try { best = Number(localStorage.getItem("shukakuBest") || 0) || 0; } catch (e) { best = 0; }
+
+const BASKET_W = 110, BASKET_H = 54, BASKET_Y = H - 96;
+const R = 26; // tomato radius
+
+function rand(a, b) { return a + Math.random() * (b - a); }
+
+function pickType() {
+  const r = Math.random();
+  if (r < 0.52) return "ripe";
+  if (r < 0.78) return "unripe";
+  return "damaged";
+}
+
+function spawn() {
+  const type = pickType();
+  items.push({
+    x: rand(R + 6, W - R - 6), y: -R - 4,
+    vy: rand(120, 165) + elapsed * 2.2,
+    sway: rand(0, Math.PI * 2), swayAmp: rand(4, 16),
+    rot: rand(-0.25, 0.25), type: type
+  });
+}
+
+function burst(x, y, color) {
+  for (let i = 0; i < 10; i++) {
+    parts.push({ x: x, y: y, vx: rand(-90, 90), vy: rand(-140, -20), life: rand(0.3, 0.6), t: 0, color: color });
+  }
+}
+
+function say(text, color) { feedback = text; feedbackTimer = 1.6; feedbackColor = color || "#ffffff"; }
+
+function miss(kind) {
+  misses++; combo = 0; shake = 8;
+  if (kind === "unripe") say(T().tipUnripe, "#ffe08a");
+  else if (kind === "damaged") say(T().tipDamaged, "#ffb08a");
+  else say(T().tipDropRipe, "#ffb08a");
+  if (misses >= 3) gameOver();
+}
+
+function gameOver() {
+  mode = "over";
+  if (score > best) { best = score; try { localStorage.setItem("shukakuBest", String(best)); } catch (e) {} }
+  document.getElementById("finalScore").textContent = score;
+  document.getElementById("finalDetail").textContent =
+    T().caught + ": " + caught + " / " + T().good + ": " + dodged + " / " + T().miss + ": " + misses +
+    " / " + T().best + ": " + best;
+  document.getElementById("finalTip").textContent = T().finalTips[Math.floor(Math.random() * T().finalTips.length)];
+  document.getElementById("overScreen").classList.remove("hidden");
+}
+
+function startGame() {
+  score = 0; combo = 0; misses = 0; caught = 0; dodged = 0;
+  items = []; parts = []; spawnTimer = 0; elapsed = 0; feedback = ""; feedbackTimer = 0;
+  mode = "play";
+  document.getElementById("titleScreen").classList.add("hidden");
+  document.getElementById("overScreen").classList.add("hidden");
+}
+
+// ---------- drawing ----------
+function drawTomato(it) {
+  ctx.save();
+  ctx.translate(it.x, it.y);
+  ctx.rotate(it.rot + Math.sin(it.sway) * 0.06);
+  let g;
+  if (it.type === "ripe") {
+    g = ctx.createRadialGradient(-8, -10, 4, 0, 0, R + 4);
+    g.addColorStop(0, "#ff9d8a"); g.addColorStop(0.45, "#f4432c"); g.addColorStop(1, "#c22412");
+  } else if (it.type === "unripe") {
+    g = ctx.createRadialGradient(-8, -10, 4, 0, 0, R + 4);
+    g.addColorStop(0, "#cdeeb2"); g.addColorStop(0.45, "#7fbc59"); g.addColorStop(1, "#4c8a34");
+  } else {
+    g = ctx.createRadialGradient(-8, -10, 4, 0, 0, R + 4);
+    g.addColorStop(0, "#d59a68"); g.addColorStop(0.5, "#a8642f"); g.addColorStop(1, "#77431c");
+  }
+  ctx.fillStyle = g;
+  ctx.beginPath(); ctx.arc(0, 0, R, 0, Math.PI * 2); ctx.fill();
+  if (it.type === "damaged") {
+    ctx.fillStyle = "rgba(60,30,8,.55)";
+    ctx.beginPath(); ctx.arc(-9, 6, 6, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(10, -4, 4.5, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = "rgba(50,24,6,.7)"; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(2, -14); ctx.lineTo(-2, -4); ctx.lineTo(4, 6); ctx.stroke();
+  }
+  if (it.type === "ripe") {
+    ctx.fillStyle = "rgba(255,255,255,.5)";
+    ctx.beginPath(); ctx.ellipse(-9, -11, 6, 4, -0.6, 0, Math.PI * 2); ctx.fill();
+  }
+  // stem (calyx)
+  ctx.fillStyle = it.type === "unripe" ? "#3f7a2a" : "#2e7d32";
+  ctx.beginPath();
+  for (let i = 0; i < 5; i++) {
+    const a = -Math.PI / 2 + i * (Math.PI * 2 / 5);
+    ctx.lineTo(Math.cos(a) * 11, -R + 4 + Math.sin(a) * 5);
+    const a2 = a + Math.PI / 5;
+    ctx.lineTo(Math.cos(a2) * 5, -R + 4 + Math.sin(a2) * 2.5);
+  }
+  ctx.closePath(); ctx.fill();
+  ctx.fillRect(-2, -R - 4, 4, 7);
+  ctx.restore();
+}
+
+function drawBasket() {
+  const x = basketX - BASKET_W / 2, y = BASKET_Y;
+  ctx.save();
+  // body
+  const g = ctx.createLinearGradient(0, y, 0, y + BASKET_H);
+  g.addColorStop(0, "#c98d4e"); g.addColorStop(1, "#9a6530");
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.moveTo(x, y); ctx.lineTo(x + BASKET_W, y);
+  ctx.lineTo(x + BASKET_W - 14, y + BASKET_H); ctx.lineTo(x + 14, y + BASKET_H);
+  ctx.closePath(); ctx.fill();
+  // weave lines
+  ctx.strokeStyle = "rgba(90,55,15,.45)"; ctx.lineWidth = 3;
+  for (let i = 1; i <= 3; i++) {
+    const yy = y + (BASKET_H / 4) * i;
+    ctx.beginPath(); ctx.moveTo(x + 4 + i * 3, yy); ctx.lineTo(x + BASKET_W - 4 - i * 3, yy); ctx.stroke();
+  }
+  // rim
+  ctx.fillStyle = "#7a4a21";
+  ctx.beginPath(); ctx.roundRect(x - 5, y - 9, BASKET_W + 10, 14, 7); ctx.fill();
+  ctx.restore();
+}
+
+function drawBackground() {
+  // sky handled by CSS gradient behind canvas is not visible; paint fully:
+  const sky = ctx.createLinearGradient(0, 0, 0, H);
+  sky.addColorStop(0, "#79b5e0"); sky.addColorStop(0.42, "#bfe0f5");
+  sky.addColorStop(0.62, "#f7e3ac"); sky.addColorStop(1, "#e8c877");
+  ctx.fillStyle = sky; ctx.fillRect(0, 0, W, H);
+  // sun
+  ctx.fillStyle = "rgba(255,236,160,.9)";
+  ctx.beginPath(); ctx.arc(W - 66, 70, 30, 0, Math.PI * 2); ctx.fill();
+  // hills / field rows
+  ctx.fillStyle = "#8fbf6a";
+  ctx.beginPath(); ctx.ellipse(W / 2, H + 130, W * 0.85, 210, 0, Math.PI, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = "rgba(90,130,50,.5)"; ctx.lineWidth = 5;
+  for (let i = -3; i <= 3; i++) {
+    ctx.beginPath();
+    ctx.moveTo(W / 2 + i * 34, H - 118);
+    ctx.lineTo(W / 2 + i * 92, H + 6);
+    ctx.stroke();
+  }
+  // ground strip where items land
+  ctx.fillStyle = "rgba(122,74,33,.9)"; ctx.fillRect(0, H - 26, W, 26);
+  ctx.fillStyle = "rgba(255,255,255,.25)"; ctx.fillRect(0, H - 26, W, 3);
+}
+
+function drawHUD() {
+  ctx.save();
+  ctx.font = "800 24px 'Hiragino Maru Gothic ProN','Noto Sans JP',sans-serif";
+  ctx.fillStyle = "#fff"; ctx.shadowColor = "rgba(0,0,0,.4)"; ctx.shadowBlur = 4;
+  ctx.textAlign = "left";
+  ctx.fillText(T().score + " " + score, 14, 34);
+  ctx.font = "700 15px 'Hiragino Maru Gothic ProN','Noto Sans JP',sans-serif";
+  ctx.fillText(T().best + " " + Math.max(best, score), 14, 56);
+  if (combo >= 2) {
+    ctx.textAlign = "center"; ctx.fillStyle = "#ffe08a";
+    ctx.font = "800 20px 'Hiragino Maru Gothic ProN','Noto Sans JP',sans-serif";
+    ctx.fillText(combo + " COMBO", W / 2, 34);
+  }
+  // misses as hearts
+  ctx.textAlign = "right";
+  for (let i = 0; i < 3; i++) {
+    ctx.fillStyle = i < (3 - misses) ? "#ff5b7f" : "rgba(255,255,255,.35)";
+    ctx.font = "22px sans-serif";
+    ctx.fillText("♥", W - 14 - i * 26, 34);
+  }
+  ctx.restore();
+}
+
+function drawFeedback() {
+  if (feedbackTimer <= 0 || !feedback) return;
+  ctx.save();
+  ctx.globalAlpha = Math.min(1, feedbackTimer);
+  ctx.font = "800 19px 'Hiragino Maru Gothic ProN','Noto Sans JP',sans-serif";
+  ctx.textAlign = "center";
+  ctx.shadowColor = "rgba(0,0,0,.55)"; ctx.shadowBlur = 6;
+  ctx.fillStyle = feedbackColor;
+  ctx.fillText(feedback, W / 2, 96);
+  ctx.restore();
+}
+
+// ---------- update ----------
+function update(dt) {
+  elapsed += dt;
+  spawnTimer -= dt;
+  const interval = Math.max(0.42, 0.95 - elapsed * 0.008);
+  if (spawnTimer <= 0) { spawn(); spawnTimer = interval * rand(0.75, 1.2); }
+
+  basketX += (targetX - basketX) * Math.min(1, dt * 14);
+  basketX = Math.max(BASKET_W / 2 - 6, Math.min(W - BASKET_W / 2 + 6, basketX));
+
+  const rimY = BASKET_Y - 4;
+  items = items.filter(function (it) {
+    it.sway += dt * 2;
+    it.y += it.vy * dt;
+    it.x += Math.sin(it.sway) * it.swayAmp * dt;
+    if (it.y + R >= rimY && it.y - R < rimY + 16 && Math.abs(it.x - basketX) < BASKET_W / 2 - 4) {
+      if (it.type === "ripe") {
+        combo++;
+        const gain = 10 + Math.min(20, Math.floor(combo / 5) * 5);
+        score += gain; caught++;
+        burst(it.x, rimY, "#ff7a5c");
+        say(T().tipsRipe[tipIdx++ % T().tipsRipe.length], "#ffffff");
+      } else {
+        miss(it.type);
+      }
+      return false;
+    }
+    if (it.y - R > H - 26) {
+      if (it.type === "ripe") miss("drop");
+      else { dodged++; if (feedbackTimer <= 0.4) say(T().tipGoodAvoid, "#c9f2b0"); }
+      return false;
+    }
+    return true;
+  });
+
+  parts = parts.filter(function (p) {
+    p.t += dt; p.x += p.vx * dt; p.y += p.vy * dt; p.vy += 300 * dt;
+    return p.t < p.life;
+  });
+
+  if (feedbackTimer > 0) feedbackTimer -= dt;
+  if (shake > 0) shake = Math.max(0, shake - dt * 26);
+}
+
+function frame(ts) {
+  const dt = Math.min(0.05, lastTs ? (ts - lastTs) / 1000 : 0.016);
+  lastTs = ts;
+  ctx.save();
+  if (shake > 0) ctx.translate(rand(-shake, shake) * 0.4, rand(-shake, shake) * 0.4);
+  drawBackground();
+  if (mode === "play") update(dt);
+  items.forEach(drawTomato);
+  parts.forEach(function (p) {
+    ctx.save(); ctx.globalAlpha = 1 - p.t / p.life; ctx.fillStyle = p.color;
+    ctx.beginPath(); ctx.arc(p.x, p.y, 4, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+  });
+  drawBasket();
+  if (mode !== "title") drawHUD();
+  drawFeedback();
+  ctx.restore();
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+
+// ---------- input ----------
+function pointerX(clientX) {
+  const rect = cv.getBoundingClientRect();
+  return (clientX - rect.left) / rect.width * W;
+}
+cv.addEventListener("pointermove", function (e) { targetX = pointerX(e.clientX); });
+cv.addEventListener("pointerdown", function (e) { targetX = pointerX(e.clientX); });
+const keys = {};
+window.addEventListener("keydown", function (e) {
+  keys[e.key] = true;
+  if (mode === "play") {
+    if (e.key === "ArrowLeft") targetX -= 34;
+    if (e.key === "ArrowRight") targetX += 34;
+  }
+});
+window.addEventListener("keyup", function (e) { keys[e.key] = false; });
+setInterval(function () {
+  if (mode !== "play") return;
+  if (keys["ArrowLeft"]) targetX -= 9;
+  if (keys["ArrowRight"]) targetX += 9;
+}, 30);
+
+// ---------- UI ----------
+function applyLang() {
+  const t = T();
+  document.getElementById("gameTitle").textContent = t.title;
+  document.getElementById("overTitle").textContent = t.over;
+  document.getElementById("howto").innerHTML = t.howto;
+  document.getElementById("lgRipe").textContent = t.lgRipe;
+  document.getElementById("lgUnripe").textContent = t.lgUnripe;
+  document.getElementById("lgDamaged").textContent = t.lgDamaged;
+  document.getElementById("controls").textContent = t.controls;
+  document.getElementById("startBtn").textContent = t.start;
+  document.getElementById("retryBtn").textContent = t.retry;
+  document.getElementById("scoreLabel").textContent = t.score;
+  document.getElementById("langBtn").textContent = lang === "ja" ? "EN" : "日本語";
+  document.documentElement.lang = lang === "ja" ? "ja" : "en";
+}
+document.getElementById("langBtn").addEventListener("click", function () {
+  lang = lang === "ja" ? "en" : "ja"; applyLang();
+});
+document.getElementById("startBtn").addEventListener("click", startGame);
+document.getElementById("retryBtn").addEventListener("click", startGame);
+applyLang();
+</script>
+</body>
+</html>
