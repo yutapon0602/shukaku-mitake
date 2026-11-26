@@ -226,7 +226,7 @@
         <div class="en">HARVEST SORT PATROL</div>
       </div>
       <div class="panel">
-        <div id="howto">畑の株でトマトが育つ。<b>完熟（真っ赤）になった実</b>のそばまで歩いて、タップして収穫しよう（遠くからでは手が届かない）。完熟直後の「ベスト」収穫で高得点。畑で種を植えて育て、交配で新しい品種を作り、秋の品評会で入賞を目指そう。ベスト収穫をつなげてフィーバー！</div>
+        <div id="howto">畑の株でトマトが育つ。<b>完熟（真っ赤）になった実</b>のそばまで歩いて、タップして収穫しよう（遠くからでは手が届かない）。完熟直後の「ベスト」収穫で高得点。畑で種を植えて育て、交配で新しい品種を作り、秋の品評会で入賞を目指そう。ベスト収穫をつなげてフィーバー！（PC: WASD・矢印キーで移動、クリックかスペースキーで収穫）</div>
         <div class="legend">
           <div><span class="dot ripe"></span><span id="lgRipe">熟した赤 = 取る</span></div>
           <div><span class="dot unripe"></span><span id="lgUnripe">青い = よける</span></div>
@@ -235,7 +235,7 @@
           <div><span class="dot damaged"></span><span id="lgDamaged">傷んだ = よける</span></div>
           <div><span class="dot gold"></span><span id="lgGold">金のトマト = 必ず取る</span></div>
         </div>
-        <div id="controls">マウス / 指 / ←→キー でカゴを動かします</div>
+        <div id="controls">ドラッグ／WASD・矢印キーで歩き回り、実のそばでタップ／クリック／スペースキーで収穫します</div>
       </div>
       <div class="farmerRow">
         <canvas class="farmerCv" id="farmerTitle" width="96" height="96"></canvas>
@@ -416,7 +416,7 @@
       </div>
     </div>
   </div>
-  <div id="credit">しゅうかく見分け隊 v14 — Ap Robo Educational LLC — Kiroween 2026 / Costume Contest</div>
+  <div id="credit">しゅうかく見分け隊 v15 — Ap Robo Educational LLC — Kiroween 2026 / Costume Contest</div>
 </div>
 <script>
 "use strict";
@@ -429,10 +429,10 @@ const STR = {
   ja: {
     title: "しゅうかく見分け隊", over: "しゅうかく終了！", start: "スタート", retry: "もう一度",
     continue: "つづきから", newGame: "はじめから",
-    howto: "畑の株でトマトが育つ。<b>完熟（真っ赤）になった実</b>のそばまで歩いて、タップして収穫しよう（遠くからでは手が届かない）。完熟直後の「ベスト」収穫で高得点。畑で種を植えて育て、交配で新しい品種を作り、秋の品評会で入賞を目指そう。ベスト収穫をつなげてフィーバー！",
+    howto: "畑の株でトマトが育つ。<b>完熟（真っ赤）になった実</b>のそばまで歩いて、タップして収穫しよう（遠くからでは手が届かない）。完熟直後の「ベスト」収穫で高得点。畑で種を植えて育て、交配で新しい品種を作り、秋の品評会で入賞を目指そう。ベスト収穫をつなげてフィーバー！（PC: WASD・矢印キーで移動、クリックかスペースキーで収穫）",
     lgRipe: "完熟 = 取る", lgUnripe: "青い = まだ待つ", lgHalf: "色づき途中 = 待つ",
     lgOver: "過熟 = 安値で出荷", lgDamaged: "傷んだ = 取らない", lgGold: "金のトマト = 必ず取る",
-    controls: "ドラッグで歩き回り、実のそばでタップして収穫します",
+    controls: "ドラッグ／WASD・矢印キーで歩き回り、実のそばでタップ／クリック／スペースキーで収穫します",
     score: "スコア", best: "ベスト",
     caught: "収穫数", good: "見逃し正解", miss: "ミス",
     accuracy: "正解率", maxCombo: "最大コンボ", days: "到達日数",
@@ -542,10 +542,10 @@ const STR = {
   en: {
     title: "Harvest Sort Patrol", over: "Harvest Complete!", start: "START", retry: "Play Again",
     continue: "Continue", newGame: "New Game",
-    howto: "Tomatoes grow on the plants in your field. Walk right up to a <b>fully ripe (deep red) fruit</b> and tap to pick it — your arms can't reach from far away. Pick right after ripening for a PERFECT bonus. Plant and raise seeds, cross varieties to breed new ones, and aim for a prize at the autumn harvest fair. Chain perfect picks for FEVER!",
+    howto: "Tomatoes grow on the plants in your field. Walk right up to a <b>fully ripe (deep red) fruit</b> and tap to pick it — your arms can't reach from far away. Pick right after ripening for a PERFECT bonus. Plant and raise seeds, cross varieties to breed new ones, and aim for a prize at the autumn harvest fair. Chain perfect picks for FEVER! (PC: WASD / arrow keys to walk, click or Space to pick.)",
     lgRipe: "Ripe = PICK", lgUnripe: "Green = WAIT", lgHalf: "Half-colored = WAIT",
     lgOver: "Overripe = CHEAP", lgDamaged: "Damaged = DON'T PICK", lgGold: "Golden = ALWAYS PICK",
-    controls: "Drag to walk the field; tap a fruit up close to pick it",
+    controls: "Walk with drag, WASD or arrow keys; tap, click, or press Space up close to pick",
     score: "SCORE", best: "BEST",
     caught: "Harvested", good: "Good dodges", miss: "Misses",
     accuracy: "Accuracy", maxCombo: "Max combo", days: "Days reached",
@@ -1051,6 +1051,10 @@ const ROWS = [
 const SLOT_OFFS = [[-42, -16], [36, -30], [-6, 16], [-56, 14], [52, 4], [0, -42]];
 let plants = [], fruits = [], flies = [], bugs = [];
 let basketY = 648, targetY = 648, basketVX = 0, basketVY = 0, basketSpeed = 0;
+// v15: the real drive velocity (the basket accelerates / decelerates
+// through this, instead of snapping to full speed), and whether the
+// keyboard is currently driving (so key release can stop the walk)
+let moveVX = 0, moveVY = 0, kbDrive = false;
 let fruitSeq = 0, bugSeq = 0;
 let bugNext = 10;
 
@@ -1070,7 +1074,7 @@ function careGrowthMul() {
 
 // ---------- v9: tools (bought at the farm shop, kept across seasons) ----------
 function toolLv(k) { return (farm.tools && farm.tools[k]) || 0; }
-function basketMaxSpeed() { return 980 * (1 + 0.09 * toolLv("shoes")); }
+function basketMaxSpeed() { return 620 * (1 + 0.09 * toolLv("shoes")); }   // v15: 980 -> 620 — v14 felt frantic on a PC
 function crowMul() { return 1 + 0.45 * toolLv("scarecrow"); }
 function fertMul() { return 1 + 0.07 * toolLv("fert"); }
 const SHOP_ITEMS = [
@@ -1864,6 +1868,7 @@ function startHarvest(kind) {
   camX = clamp(basketX - W / 2, 0, WW - W);
   daySquash = 0; dayBest = 0; dayGold = 0; dayRushPicks = 0; dayCrowStolen = 0; dayMaxCombo = 0;
   basketVX = 0; basketVY = 0; basketSpeed = 0; basketSink = 0;
+  moveVX = 0; moveVY = 0; kbDrive = false;
   // v6: day 7 is always the fair final against the rival; other days can
   // choose a rival match instead of a normal harvest.
   vsFinal = (day === SEASON_DAYS);
@@ -3320,16 +3325,51 @@ function update(dt) {
     if (vsT <= 0) { vsT = 0; endVersus(); updateParts(dt); return; }
   }
 
-  // basket movement (2D): chase the target at a capped speed and track the
-  // real velocity — the squash rule reads it at pick time
+  // v15: PC keyboard drive — WASD / arrow keys held down steer the
+  // picker directly. The play camera always looks into the field
+  // (away from the viewer), so the mapping is camera-relative by
+  // construction: W walks toward the back rows, S toward the viewer,
+  // A / D along the row. While a key is held, the walk target rides a
+  // short way ahead of the basket in the key direction; on release
+  // the target snaps back to the basket, so he stops instead of
+  // wandering on to the last mouse / touch point.
+  let kbX = 0, kbY = 0;
+  if (keysDown["KeyA"] || keysDown["ArrowLeft"]) kbX -= 1;
+  if (keysDown["KeyD"] || keysDown["ArrowRight"]) kbX += 1;
+  if (keysDown["KeyW"] || keysDown["ArrowUp"]) kbY -= 1;
+  if (keysDown["KeyS"] || keysDown["ArrowDown"]) kbY += 1;
+  if (kbX !== 0 || kbY !== 0) {
+    const kl = Math.hypot(kbX, kbY);
+    targetX = clamp(basketX + (kbX / kl) * 190, 46, WW - 46);
+    targetY = clamp(basketY + (kbY / kl) * 190, 196, 690);
+    kbDrive = true;
+  } else if (kbDrive) {
+    targetX = basketX; targetY = basketY;
+    kbDrive = false;
+  }
+
+  // basket movement (2D): chase the target and track the real
+  // velocity — the squash rule reads it at pick time.
+  // v15: the chase runs through a drive velocity now. v14 snapped the
+  // basket to full speed the instant the target moved and stopped
+  // just as abruptly, which felt frantic and juddered the camera.
+  // The desired velocity points at the target and eases off on
+  // approach (arrive), and the drive velocity relaxes toward it:
+  // a soft start, a soft stop, and a lower top speed than v14.
   const ox = basketX, oy = basketY;
   const dx = targetX - basketX, dy = targetY - basketY;
   const dd = Math.hypot(dx, dy);
-  if (dd > 0.5) {
-    const step = Math.min(dd, basketMaxSpeed() * dt);
-    basketX += dx / dd * step;
-    basketY += dy / dd * step;
+  let desVX = 0, desVY = 0;
+  if (dd > 1) {
+    const sp = Math.min(basketMaxSpeed(), dd / 0.16);
+    desVX = dx / dd * sp; desVY = dy / dd * sp;
   }
+  const accK = Math.min(1, dt * 6.5);
+  moveVX += (desVX - moveVX) * accK;
+  moveVY += (desVY - moveVY) * accK;
+  if (desVX === 0 && desVY === 0 && Math.hypot(moveVX, moveVY) < 6) { moveVX = 0; moveVY = 0; }
+  basketX += moveVX * dt;
+  basketY += moveVY * dt;
   basketX = clamp(basketX, 46, WW - 46);
   basketY = clamp(basketY, 196, 690);
   const ivx = (basketX - ox) / Math.max(dt, 0.001), ivy = (basketY - oy) / Math.max(dt, 0.001);
@@ -3340,8 +3380,10 @@ function update(dt) {
   basketSink = Math.max(0, basketSink - dt * 3);
 
   // v9: the camera follows with a velocity look-ahead, so running feels fast
+  // v15: exponential damping — the old dt-linear factor changed
+  // stiffness with the frame rate, juddering exactly when fps dropped
   const camGoal = clamp(basketX + clamp(basketVX * 0.30, -120, 120) - W / 2, 0, WW - W);
-  camX += (camGoal - camX) * Math.min(1, dt * 5.5);
+  camX += (camGoal - camX) * (1 - Math.exp(-dt * 6));
   if (Math.abs(camGoal - camX) < 0.5) camX = camGoal;
 
   // v8: ripening-rush scheduler — a warning, then the wave (max twice a day)
@@ -3503,6 +3545,12 @@ function sceneSnapshot() {
 
 function frame(ts) {
   const dt = Math.min(0.05, lastTs ? (ts - lastTs) / 1000 : 0.016);
+  // v15: the 3D layer's fps meter (and its adaptive quality) needs
+  // the RAW frame delta — with dt clamped at 0.05 the meter can never
+  // read below 20 fps, so on a genuinely slow machine it believed
+  // all was well while frames took seconds. Game logic keeps the
+  // clamped dt; only the meter sees the raw one.
+  window.__rawDt = lastTs ? (ts - lastTs) / 1000 : 0.016;
   lastTs = ts;
   const ready3d = typeof window.__h3dReady === "function" && window.__h3dReady();
   const use3d = mode === "play" && ready3d;
@@ -3867,18 +3915,34 @@ cv.addEventListener("pointermove", function (e) {
 });
 window.addEventListener("pointerup", function () { pointerDown = false; });
 window.addEventListener("pointercancel", function () { pointerDown = false; });
-const keys = {};
-window.addEventListener("keydown", function (e) { keys[e.key] = true; });
-window.addEventListener("keyup", function (e) { keys[e.key] = false; });
-setInterval(function () {
+// v15: PC keyboard controls. Keys are tracked by e.code, so WASD
+// works on any keyboard layout; the arrow keys work too. Movement is
+// applied in update() (camera-relative); Space / E picks the nearest
+// ripe fruit already within reach. (v14 had only a setInterval that
+// nudged the target with the arrow keys — no WASD, and the target
+// crawled at ~370 u/s while the basket chased at 980.)
+const keysDown = {};
+window.addEventListener("keydown", function (e) {
+  keysDown[e.code] = true;
   if (mode !== "play") return;
-  if (keys["ArrowLeft"]) targetX -= 11;
-  if (keys["ArrowRight"]) targetX += 11;
-  if (keys["ArrowUp"]) targetY -= 11;
-  if (keys["ArrowDown"]) targetY += 11;
-  targetX = clamp(targetX, 46, WW - 46);
-  targetY = clamp(targetY, 196, 690);
-}, 30);
+  if (e.code === "ArrowLeft" || e.code === "ArrowRight" || e.code === "ArrowUp" || e.code === "ArrowDown" || e.code === "Space") e.preventDefault();
+  if (!e.repeat && (e.code === "Space" || e.code === "KeyE")) harvestKeyPick();
+});
+window.addEventListener("keyup", function (e) { keysDown[e.code] = false; });
+window.addEventListener("blur", function () { for (const k in keysDown) keysDown[k] = false; });
+// Space / E: pick the nearest ripe (or golden) fruit the picker can
+// already reach — the same REACH rule as a tap. Nothing in reach is
+// a whiff, not a mistake: no penalty, exactly like tapping thin air.
+function harvestKeyPick() {
+  let bestF = null, bestD = 1e9;
+  fruits.forEach(function (f) {
+    const st = fruitStage(f);
+    if (st !== "ripe" && st !== "gold") return;
+    const d = fruitReach(f, basketX, basketY);
+    if (d <= REACH && d < bestD) { bestD = d; bestF = f; }
+  });
+  if (bestF) pickFruit(bestF, "you");
+}
 
 // ---------- UI: title ----------
 function refreshTitle() {
@@ -4498,6 +4562,38 @@ function init() {
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  // v15: adaptive quality. The user played v14 on a PC and hit heavy
+  // stutter: the field is a dense GLB scene, and at full cost a weak
+  // GPU (or software rendering) falls behind and every input feels
+  // broken. When the sustained frame rate sags, step the render cost
+  // down — pixel ratio first, then soft shadows, then shadows — and
+  // step back up if headroom returns. applyQuality is only ever
+  // called from __h3dFrame, after init() has built scene and sun.
+  const QUALITY = [
+    { pr: Math.min(window.devicePixelRatio || 1, 1.5), soft: true, shadow: true },
+    { pr: Math.min(window.devicePixelRatio || 1, 1.25), soft: true, shadow: true },
+    { pr: 1, soft: false, shadow: true },
+    { pr: 0.8, soft: false, shadow: false }
+  ];
+  let qLevel = 0, qTimer = 0;
+  function applyQuality() {
+    const q = QUALITY[qLevel];
+    renderer.setPixelRatio(q.pr);
+    renderer.setSize(GW, GH, false);
+    const type = q.soft ? THREE.PCFSoftShadowMap : THREE.PCFShadowMap;
+    if (renderer.shadowMap.type !== type) {
+      renderer.shadowMap.type = type;
+      scene.traverse(function (o) { if (o.material) o.material.needsUpdate = true; });
+    }
+    sun.castShadow = q.shadow;
+  }
+  window.__h3dPerf = function () {
+    if (!ready) return null;
+    return {
+      fps: Math.round(fpsEMA), level: qLevel,
+      pixelRatio: QUALITY[qLevel].pr, shadows: sun.castShadow, soft: QUALITY[qLevel].soft
+    };
+  };
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.02;
@@ -5194,6 +5290,8 @@ function init() {
   const itemMeshes = new Map();
   const corpseMeshes = new Map();
   const plantMeshes = new Map();
+  const plantMats = new Map();      // v15: per-plant cloned materials (near-camera fade)
+  const plantFadeMem = new Map();   // v15: last fade value applied per plant
   function fruitMesh(type, hue) {
     const proto = protos[type] || protos.ripe;
     const g = proto.clone(true);
@@ -5257,6 +5355,12 @@ function init() {
   // still, keeps facing into the field, away from the camera behind
   // him. Turns ease around the short way.
   const camFollow = { x: GW / 2, z: 104, on: false };
+  let lookOffSm = 0;   // v15: smoothed camera look-ahead offset (was raw velocity — jittered at low fps)
+  // v15: per-frame census of the near-camera leaf fade (see the plant
+  // loop in __h3dFrame) — exposed so the fade can be verified, not
+  // just claimed
+  let fadeStats = { faded: 0, hidden: 0, total: 0 };
+  window.__h3dPlantFade = function () { return ready ? fadeStats : null; };
   function faceToward(ch, vx, vy, dt) {
     const mvz = (vy || 0) * ZSCALE;
     if (Math.hypot(vx || 0, mvz) > 42) ch.userData.yawT = Math.atan2(vx || 0, mvz);
@@ -5310,8 +5414,20 @@ function init() {
   let elapsed = 0;
   window.__h3dFrame = function (dt, snap) {
     if (!ready) return;
-    fpsEMA = fpsEMA * 0.95 + (dt > 0 ? 1 / dt : 60) * 0.05;
+    // v15: meter the RAW frame delta (see frame() in the game script)
+    const rawDt = window.__rawDt || dt;
+    fpsEMA = fpsEMA * 0.95 + (rawDt > 0 ? 1 / rawDt : 60) * 0.05;
     elapsed += dt;
+    // v15: adaptive quality stepping — judge on the EMA every ~4
+    // real seconds, one step at a time (see QUALITY in init). The
+    // clock is the raw delta on purpose: with the clamped dt a slow
+    // machine would need minutes of wall time to earn one step.
+    qTimer += rawDt;
+    if (qTimer > 4) {
+      qTimer = 0;
+      if (fpsEMA < 38 && qLevel < QUALITY.length - 1) { qLevel++; applyQuality(); }
+      else if (fpsEMA > 57 && qLevel > 0) { qLevel--; applyQuality(); }
+    }
     paintSky(snap.sky);
     // v10: gameplay owns the stage — menu-scene props go away, and every
     // play object the menu scenes hid comes back.
@@ -5334,7 +5450,10 @@ function init() {
     if (!camFollow.on || Math.hypot(pb.x - camFollow.x, pCharZ - camFollow.z) > 720) {
       camFollow.x = pb.x; camFollow.z = pCharZ; camFollow.on = true;
     }
-    const ck = Math.min(1, dt * 4.4);
+    // v15: frame-rate independent exponential damping — v14's
+    // dt-linear factor (dt * 4.4) changed stiffness with the frame
+    // rate, so the follow juddered exactly when the fps dropped
+    const ck = 1 - Math.exp(-dt * 5.2);
     camFollow.x += (pb.x - camFollow.x) * ck;
     camFollow.z += (pCharZ - camFollow.z) * ck;
     // framing (tuned in verification): 285 behind and 232 up keeps the
@@ -5342,10 +5461,8 @@ function init() {
     // first tuning (338 / 178) it sat inside the front row's leaves
     // whenever the player walked to the back row
     camera.position.set(camFollow.x + 28, 232, camFollow.z + 285);
-    camera.lookAt(
-      camFollow.x + Math.max(-46, Math.min(46, (pb.vx || 0) * 0.055)),
-      48, camFollow.z - 235
-    );
+    lookOffSm += (Math.max(-46, Math.min(46, (pb.vx || 0) * 0.055)) - lookOffSm) * Math.min(1, dt * 5);
+    camera.lookAt(camFollow.x + lookOffSm, 48, camFollow.z - 235);
     aimSun(camFollow.x, camFollow.z);
     if (snap.fieldKey !== propsKey) buildProps(snap);
     // the decorative backdrop rows are culled to the camera's slice too
@@ -5425,11 +5542,47 @@ function init() {
     // decorative rows stay as a backdrop behind them
     if (protos.plant) {
       const seenP = new Set();
+      let fadeN = 0, hiddenN = 0;
       snap.plants.forEach(function (p) {
         seenP.add(p.id);
         let g = plantMeshes.get(p.id);
-        if (!g) { g = protos.plant.clone(true); g.traverse(function (o) { if (o.isMesh) o.castShadow = false; }); scene.add(g); plantMeshes.set(p.id, g); }
+        if (!g) {
+          g = protos.plant.clone(true);
+          // v15: materials are cloned per plant so the near-camera
+          // fade below can dim one plant without dimming them all
+          const mats = [];
+          g.traverse(function (o) {
+            if (o.isMesh) { o.castShadow = false; o.material = o.material.clone(); mats.push(o.material); }
+          });
+          plantMats.set(p.id, mats);
+          scene.add(g); plantMeshes.set(p.id, g);
+        }
+        // v15: plants far outside the character-view camera's slice
+        // are not drawn at all (v14 updated and rendered all 36)
+        if (Math.abs(p.x - camFollow.x) > 1050) { g.visible = false; return; }
+        const pz = depthZ(p.y);
+        // v15: the leaf-wall fix. The camera trails the picker THROUGH
+        // the rows behind him, so the row he just passed stands right
+        // in front of the lens and its canopy could fill the whole
+        // screen (the user's v14 walkthrough video shows exactly
+        // that). A plant that close to the camera now fades out —
+        // fully gone under 170 units, back to solid by 300 — so the
+        // picker and the field ahead stay visible while he walks.
+        const dCam = Math.hypot(p.x - camera.position.x, pz - camera.position.z);
+        const fade = dCam >= 300 ? 1 : dCam <= 170 ? 0 : (dCam - 170) / 130;
+        if (fade <= 0) { g.visible = false; hiddenN++; return; }
         g.visible = true;
+        const mats = plantMats.get(p.id);
+        if (fade < 1) {
+          fadeN++;
+          if (plantFadeMem.get(p.id) !== fade) {
+            plantFadeMem.set(p.id, fade);
+            if (mats) mats.forEach(function (m) { m.transparent = true; m.opacity = fade; m.depthWrite = false; });
+          }
+        } else if (plantFadeMem.get(p.id) !== 1) {
+          plantFadeMem.set(p.id, 1);
+          if (mats) mats.forEach(function (m) { m.transparent = false; m.opacity = 1; m.depthWrite = true; });
+        }
         const norm = protos.plant.userData.norm || 1;
         // v13 fix: the tomato canopy is very deep front-to-back; left
         // round, neighbouring rows merge into a solid hedge and the
@@ -5437,10 +5590,11 @@ function init() {
         // canopy's depth opens the aisles between the rows so a person
         // standing in an aisle stays visible (footprint/height kept).
         g.scale.set(norm * p.s, norm * p.s, norm * p.s * 0.6);
-        g.position.set(p.x, 120 * p.s, depthZ(p.y));
+        g.position.set(p.x, 120 * p.s, pz);
         g.rotation.z = (p.sway || 0) * 0.7;
         g.rotation.x = (p.sway || 0) * 0.5;
       });
+      fadeStats = { faded: fadeN, hidden: hiddenN, total: snap.plants.length };
       // v9 culling: plants outside the camera's slice are not drawn
       plantMeshes.forEach(function (g, id) { if (!seenP.has(id)) g.visible = false; });
     }
@@ -5698,7 +5852,8 @@ function init() {
 
   window.__h3dScene = function (name, dt, snap) {
     if (!ready) return;
-    fpsEMA = fpsEMA * 0.95 + (dt > 0 ? 1 / dt : 60) * 0.05;
+    const rawDt = window.__rawDt || dt;
+    fpsEMA = fpsEMA * 0.95 + (rawDt > 0 ? 1 / rawDt : 60) * 0.05;
     elapsed += dt;
     if (name !== stageName) {
       stageName = name; stageT = 0; stageLine = -1;
