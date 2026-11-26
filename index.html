@@ -226,7 +226,7 @@
         <div class="en">HARVEST SORT PATROL</div>
       </div>
       <div class="panel">
-        <div id="howto">畑の株でトマトが育つ。<b>完熟（真っ赤）になった実だけ</b>をタップして収穫しよう。完熟直後の「ベスト」収穫で高得点。畑で種を植えて育て、交配で新しい品種を作り、秋の品評会で入賞を目指そう。ベスト収穫をつなげてフィーバー！</div>
+        <div id="howto">畑の株でトマトが育つ。<b>完熟（真っ赤）になった実</b>のそばまで歩いて、タップして収穫しよう（遠くからでは手が届かない）。完熟直後の「ベスト」収穫で高得点。畑で種を植えて育て、交配で新しい品種を作り、秋の品評会で入賞を目指そう。ベスト収穫をつなげてフィーバー！</div>
         <div class="legend">
           <div><span class="dot ripe"></span><span id="lgRipe">熟した赤 = 取る</span></div>
           <div><span class="dot unripe"></span><span id="lgUnripe">青い = よける</span></div>
@@ -416,7 +416,7 @@
       </div>
     </div>
   </div>
-  <div id="credit">Ap Robo Educational LLC — Kiroween 2026 / Costume Contest</div>
+  <div id="credit">しゅうかく見分け隊 v14 — Ap Robo Educational LLC — Kiroween 2026 / Costume Contest</div>
 </div>
 <script>
 "use strict";
@@ -429,10 +429,10 @@ const STR = {
   ja: {
     title: "しゅうかく見分け隊", over: "しゅうかく終了！", start: "スタート", retry: "もう一度",
     continue: "つづきから", newGame: "はじめから",
-    howto: "畑の株でトマトが育つ。<b>完熟（真っ赤）になった実だけ</b>をタップして収穫しよう。完熟直後の「ベスト」収穫で高得点。畑で種を植えて育て、交配で新しい品種を作り、秋の品評会で入賞を目指そう。ベスト収穫をつなげてフィーバー！",
+    howto: "畑の株でトマトが育つ。<b>完熟（真っ赤）になった実</b>のそばまで歩いて、タップして収穫しよう（遠くからでは手が届かない）。完熟直後の「ベスト」収穫で高得点。畑で種を植えて育て、交配で新しい品種を作り、秋の品評会で入賞を目指そう。ベスト収穫をつなげてフィーバー！",
     lgRipe: "完熟 = 取る", lgUnripe: "青い = まだ待つ", lgHalf: "色づき途中 = 待つ",
     lgOver: "過熟 = 安値で出荷", lgDamaged: "傷んだ = 取らない", lgGold: "金のトマト = 必ず取る",
-    controls: "ドラッグでカゴを動かし、実をタップして収穫します",
+    controls: "ドラッグで歩き回り、実のそばでタップして収穫します",
     score: "スコア", best: "ベスト",
     caught: "収穫数", good: "見逃し正解", miss: "ミス",
     accuracy: "正解率", maxCombo: "最大コンボ", days: "到達日数",
@@ -495,6 +495,7 @@ const STR = {
     vsWin: "勝ち！", vsLose: "負け…", vsDraw: "引き分け",
     vsIntro: "隣の畑のゴンじいが勝負をしかけてきた！ 同じ畑で完熟トマトを取り合って、出荷額で勝負じゃ",
     tipSquash: "カゴの縁で潰れた！ 近くでそっと取ろう",
+    tipFar: "とどかない！ 実のそばまで歩こう",
     tipHardySave: "丈夫な品種だから潰れずに滑り込んだ！",
     crowWarn: "カラスの影…！", crowStole: "カラスに完熟トマトを奪われた！", crowHit: "カラスにはたき落とされた！",
     bestTip: "ベスト収穫！", overPick: "過熟…安値で出荷", crowScare: "カラスを追い払った！", bugShoo: "害虫を追い払った！",
@@ -541,10 +542,10 @@ const STR = {
   en: {
     title: "Harvest Sort Patrol", over: "Harvest Complete!", start: "START", retry: "Play Again",
     continue: "Continue", newGame: "New Game",
-    howto: "Tomatoes grow on the plants in your field. Tap to pick <b>only the fully ripe (deep red) fruit</b> — pick right after ripening for a PERFECT bonus. Plant and raise seeds, cross varieties to breed new ones, and aim for a prize at the autumn harvest fair. Chain perfect picks for FEVER!",
+    howto: "Tomatoes grow on the plants in your field. Walk right up to a <b>fully ripe (deep red) fruit</b> and tap to pick it — your arms can't reach from far away. Pick right after ripening for a PERFECT bonus. Plant and raise seeds, cross varieties to breed new ones, and aim for a prize at the autumn harvest fair. Chain perfect picks for FEVER!",
     lgRipe: "Ripe = PICK", lgUnripe: "Green = WAIT", lgHalf: "Half-colored = WAIT",
     lgOver: "Overripe = CHEAP", lgDamaged: "Damaged = DON'T PICK", lgGold: "Golden = ALWAYS PICK",
-    controls: "Drag to move the basket; tap a fruit to pick it",
+    controls: "Drag to walk the field; tap a fruit up close to pick it",
     score: "SCORE", best: "BEST",
     caught: "Harvested", good: "Good dodges", miss: "Misses",
     accuracy: "Accuracy", maxCombo: "Max combo", days: "Days reached",
@@ -607,6 +608,7 @@ const STR = {
     vsWin: "YOU WIN!", vsLose: "You lose…", vsDraw: "Draw",
     vsIntro: "Old Gon from the next field challenges you! Race him in the same field — highest shipped value wins",
     tipSquash: "Squashed on the rim! Pick gently, up close",
+    tipFar: "Out of reach! Walk up to the fruit",
     tipHardySave: "A hardy variety — it slid in without squashing!",
     crowWarn: "A crow's shadow…!", crowStole: "A crow stole a ripe tomato!", crowHit: "A crow knocked it down!",
     bestTip: "PERFECT PICK!", overPick: "Overripe… shipped cheap", crowScare: "Scared the crow off!", bugShoo: "Shooed the pest away!",
@@ -1168,7 +1170,7 @@ function spawnFruit(slot, g0) {
     g: g0 || 0, rate: rand(0.85, 1.18),
     variety: plant.variety,
     gold: Math.random() < 0.022,
-    damaged: false, _rainRolled: false, rushBoost: false,
+    damaged: false, _rainRolled: false, rushBoost: false, wobbleT: 0,
     r: 20
   };
   f.r = fruitRadius(f);
@@ -1250,6 +1252,7 @@ function updateField(dt) {
       }
     }
     f.r = fruitRadius(f);
+    if (f.wobbleT > 0) f.wobbleT -= dt;   // v14: the out-of-reach wobble runs down
     if (!f.gold && f.g >= 1.12) {
       // left far too long: it drops off the vine and squashes on the ground
       removeFruit(f);
@@ -2199,7 +2202,9 @@ function drawFieldPlant(p) {
 function drawFieldFruit(f) {
   const st = fruitStage(f);
   ctx.save();
-  ctx.translate(f.x, f.y);
+  // v14: an out-of-reach tap shakes the fruit on the vine
+  const wobX = f.wobbleT > 0 ? Math.sin(elapsed * 42 + f.id) * 5 * Math.min(1, f.wobbleT / 0.55) : 0;
+  ctx.translate(f.x + wobX, f.y);
   ctx.rotate(Math.sin(elapsed * 1.7 + f.id * 2.1) * 0.07);
   if (st === "overripe") ctx.scale(1.04, 0.92);
   const r = Math.max(9, f.r);
@@ -2882,6 +2887,28 @@ function missPlay(kind) {
   else say(T().tipOver, "#e8a0a0");
 }
 
+// ---------- v14: a pick only lands within arm's reach ----------
+// The user, playing v13, found the hole in the game: a tap picked a
+// fruit from anywhere on the field, so walking the rows meant nothing.
+// Now the picker has to be standing at the plant. The distance is the
+// true ground-plane distance from the basket to the plant's base —
+// dx along the row, dz across the rows at the field's depth scale
+// (1.55 world units per ground line unit, the same scale the 3D layer
+// and the squash rule use). REACH 150 ≈ one and a half character
+// heights: the plant you stand at, and its next-door neighbour, are
+// in reach; the next row (217 away in depth) is not.
+const REACH = 150;
+function groundDistTo(px, pgy, bx, by) {
+  return Math.hypot(px - bx, (pgy - (by + 40)) * 1.55);
+}
+function fruitReach(f, bx, by) { return groundDistTo(f.plant.x, f.plant.y, bx, by); }
+// out of reach is NOT a mistake: no fruit, no miss, no heart — the
+// fruit wobbles on the vine and a line says why, that's all.
+function tooFarFeedback(f) {
+  if (f) f.wobbleT = 0.55;
+  say(T().tipFar, "#ffe08a");
+}
+
 // tap a fruit on the vine: it arcs through the air into the picker's basket.
 // Rough handling — picking from far away, or while the basket is moving
 // fast, or with rain-slick hands — can squash it on the basket rim.
@@ -2891,6 +2918,13 @@ function pickFruit(f, who) {
   const st = fruitStage(f);
   const bx = who === "rival" ? rival.x : basketX;
   const by = who === "rival" ? rival.y : basketY;
+  // v14: too far away is not a pick at all. Gon plays by the same rule
+  // (he already walks right up to his fruit before taking it, so this
+  // guard simply makes the rule his as much as the player's).
+  if (fruitReach(f, bx, by) > REACH) {
+    if (who === "you") tooFarFeedback(f);
+    return false;
+  }
   // v13: the field has real depth now, so the "rough handling" distance
   // is the true 3D distance between the fruit (hanging on its plant, at
   // its own height) and the picker's basket: dx along the row, dz across
@@ -3128,7 +3162,7 @@ function updateRival(dt) {
   // standing under his target fruit: he picks it — and it is gone for you
   if (rival.cd <= 0 && rival.targetFruitId) {
     const tgt = fruits.find(function (f) { return f.id === rival.targetFruitId; });
-    if (tgt && Math.hypot(tgt.x - rival.x, tgt.y + 58 - rival.y) < 30) {
+    if (tgt && Math.hypot(tgt.x - rival.x, tgt.y + 58 - rival.y) < 30 && fruitReach(tgt, rival.x, rival.y) <= REACH) {
       if (pickFruit(tgt, "rival")) { rival.cd = rand(0.5, 0.95) * Math.max(0.6, 1 - (season - 1) * 0.1); rival.targetFruitId = 0; }
     }
   }
@@ -3412,7 +3446,7 @@ function h3dSnapshot() {
     // real depth (from gy) and real height (h) instead of stacking
     // everything on one plane.
     fruits: fruits.filter(function (f) { return f.x > camX - 190 && f.x < camX + W + 190; }).map(function (f) {
-      return { id: f.id, type: fruitRenderType(f), x: f.x, y: f.y, gy: f.plant.y, h: f.plant.y - f.y, zo: 16, r: Math.max(9, f.r), rot: Math.sin(elapsed * 1.7 + f.id * 2.1) * 0.07, hue: f.variety ? f.variety.hue : 0, best: fruitBest(f), ring: ripeFrac(f), ringKind: ringKind(f), rush: rushT > 0 && !!f.rushBoost };
+      return { id: f.id, type: fruitRenderType(f), x: f.x, y: f.y, gy: f.plant.y, h: f.plant.y - f.y, zo: 16, r: Math.max(9, f.r), rot: Math.sin(elapsed * 1.7 + f.id * 2.1) * 0.07, hue: f.variety ? f.variety.hue : 0, best: fruitBest(f), ring: ripeFrac(f), ringKind: ringKind(f), rush: rushT > 0 && !!f.rushBoost, wob: f.wobbleT > 0 ? Math.round(f.wobbleT * 100) / 100 : 0 };
     }),
     fx: fx,
     flies: flies.map(function (fl) {
@@ -3656,7 +3690,13 @@ function drawIndicators() {
     let sx, sy;
     if (useProj) {
       const pr = window.__h3dProject(f.x, f.plant.y, f.plant.y - f.y);
-      if (!pr) return;
+      if (!pr) {
+        // v14: with the character-view camera a ripe fruit can wait
+        // behind the player — point along the bottom edge toward its
+        // side instead of dropping the hint altogether
+        cand.push({ f: f, pri: pri, col: col, frac: st === "gold" ? 1 : ripeFrac(f), sx: f.x < basketX ? -20 : W + 20, sy: H - 40 });
+        return;
+      }
       if (pr.x > -8 && pr.x < W + 8 && pr.y > 52 && pr.y < H + 8) return; // on screen
       sx = pr.x; sy = pr.y;
     } else {
@@ -3712,9 +3752,15 @@ function drawIndicators() {
     let side = null, ry = 0;
     if (useProj) {
       const pr = window.__h3dProject(rival.x, rival.y + 40, 104);
-      if (!pr || (pr.x >= -10 && pr.x <= W + 10)) return;
-      side = pr.x < W / 2 ? "L" : "R";
-      ry = clamp(pr.y + 24, 190, H - 110);
+      if (pr && pr.x >= -10 && pr.x <= W + 10) return; // on screen
+      if (!pr) {
+        // v14: Gon behind the camera — point along the bottom edge
+        side = rival.x < basketX ? "L" : "R";
+        ry = H - 110;
+      } else {
+        side = pr.x < W / 2 ? "L" : "R";
+        ry = clamp(pr.y + 24, 190, H - 110);
+      }
     } else {
       side = rival.x < camX ? "L" : "R";
       ry = clamp(rival.y, 190, H - 110);
@@ -3747,7 +3793,14 @@ function handleTap(x, y) {
   if (crow && crow.state !== "leave" && Math.hypot(x - crow.x, y - crow.y) < 52) { scareCrow(); return true; }
   for (let i = 0; i < bugs.length; i++) {
     const b = bugs[i];
-    if (b.state === "sit" && Math.hypot(x - b.x, y - b.y) < 36) { shooBug(b); return true; }
+    if (b.state === "sit" && Math.hypot(x - b.x, y - b.y) < 36) {
+      // v14: shooing a pest is arm's work too — walk up to its plant
+      if (b.plant && groundDistTo(b.plant.x, b.plant.y, basketX, basketY) > REACH) {
+        tooFarFeedback(fruits.find(function (fr) { return fr.plant === b.plant; }) || null);
+        return true;
+      }
+      shooBug(b); return true;
+    }
   }
   let bestF = null, bestD = 1e9;
   const tapPad = 18 + 6 * toolLv("basket");   // v9: a bigger basket reaches further
@@ -3782,7 +3835,13 @@ cv.addEventListener("pointerdown", function (e) {
         if (f) { pickFruit(f, "you"); return; }
       } else if (pick.hit === "bug") {
         const b = bugs.find(function (bg) { return bg.id === pick.id; });
-        if (b && b.state === "sit") { shooBug(b); return; }
+        if (b && b.state === "sit") {
+          // v14: same reach rule as fruit — walk up to the plant first
+          if (b.plant && groundDistTo(b.plant.x, b.plant.y, basketX, basketY) > REACH) {
+            tooFarFeedback(fruits.find(function (fr) { return fr.plant === b.plant; }) || null);
+          } else shooBug(b);
+          return;
+        }
       } else if (pick.hit === "crow") {
         if (crow && crow.state !== "leave") { scareCrow(); return; }
       } else if (pick.hit === "ground") { applyGroundTarget(pick, e.pointerType === "touch"); return; }
@@ -4372,6 +4431,16 @@ window.__pickById = function (id) {
   const f = fruits.find(function (fr) { return fr.id === id; });
   return f ? pickFruit(f, "you") : false;
 };
+// v14 hook: how far the player stands from a fruit's plant, vs REACH
+window.__reachInfo = function (id) {
+  const f = fruits.find(function (fr) { return fr.id === id; });
+  if (!f) return null;
+  return {
+    dist: Math.round(fruitReach(f, basketX, basketY)), reach: REACH,
+    px: Math.round(basketX), py: Math.round(basketY),
+    plantX: f.plant.x, plantY: f.plant.y, wobbleT: Math.round((f.wobbleT || 0) * 100) / 100
+  };
+};
 window.__corpses = function () { return corpses.map(function (c) { return c.kind + ":" + c.type; }); };
 window.__freezeCorpses = function () { corpses.forEach(function (c) { c.t = 999; }); };
 window.__fruitG = function () { return fruits.length ? Math.round(fruits[0].g * 1000) / 1000 : null; };
@@ -4466,9 +4535,16 @@ function init() {
   sun.shadow.camera.left = -720; sun.shadow.camera.right = 720;
   sun.shadow.camera.top = 720; sun.shadow.camera.bottom = -720;
   sun.shadow.camera.near = 10; sun.shadow.camera.far = 2800;
-  function aimSun(cx) {
-    sun.position.set(cx + 260, 430, 330);
-    sun.target.position.set(cx, 0, -300);
+  function aimSun(cx, cz) {
+    // v14: in play the shadow box travels with the character-view
+    // camera's focus (cz given); menu scenes keep the v13 framing
+    if (cz == null) {
+      sun.position.set(cx + 260, 430, 330);
+      sun.target.position.set(cx, 0, -300);
+    } else {
+      sun.position.set(cx + 260, 430, cz + 470);
+      sun.target.position.set(cx, 0, cz - 170);
+    }
   }
   aimSun(GW / 2);
   sun.shadow.bias = -0.0004;
@@ -5164,6 +5240,32 @@ function init() {
     const p = projectRaw(x, h || 0, depthZ(gy));
     return p.behind ? null : p;
   };
+  // v14: where the character-view camera sits, and which way the cast
+  // faces — exposed so the view can be verified, not just claimed
+  window.__h3dCamInfo = function () {
+    if (!ready) return null;
+    return {
+      camX: Math.round(camera.position.x), camY: Math.round(camera.position.y), camZ: Math.round(camera.position.z),
+      followX: Math.round(camFollow.x), followZ: Math.round(camFollow.z),
+      pYaw: charP ? Math.round(charP.rotation.y * 100) / 100 : null,
+      rYaw: charR ? Math.round(charR.rotation.y * 100) / 100 : null
+    };
+  };
+  // v14: the play camera's smoothed follow point (the player's ground
+  // position), and the cast's turning: a character faces the way he is
+  // moving — world forward is -z, into the field — and, standing
+  // still, keeps facing into the field, away from the camera behind
+  // him. Turns ease around the short way.
+  const camFollow = { x: GW / 2, z: 104, on: false };
+  function faceToward(ch, vx, vy, dt) {
+    const mvz = (vy || 0) * ZSCALE;
+    if (Math.hypot(vx || 0, mvz) > 42) ch.userData.yawT = Math.atan2(vx || 0, mvz);
+    if (ch.userData.yawT == null) ch.userData.yawT = Math.PI;
+    let dy = ch.userData.yawT - ch.rotation.y;
+    while (dy > Math.PI) dy -= Math.PI * 2;
+    while (dy < -Math.PI) dy += Math.PI * 2;
+    ch.rotation.y += dy * Math.min(1, dt * 6.5);
+  }
   const _ray = new THREE.Raycaster();
   const _ndc = new THREE.Vector2();
   const _groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
@@ -5217,14 +5319,37 @@ function init() {
     setPlayVisible(true);
     if (charG) charG.visible = false;
 
-    // v9: the camera rides with the player across the wide field; the sun
-    // (and its shadow box) travel along so shadows stay put
-    const camCx = (snap.camX || 0) + GW / 2;
-    aimCamera(camCx);
-    aimSun(camCx);
+    // v14: character-view camera. v9–v13 rode a fixed gantry above the
+    // front rows and only slid sideways; the user asked for the
+    // character's own viewpoint instead. The camera now sits just
+    // behind the player's right shoulder, low, and looks past him into
+    // the field: his back fills the lower frame, the row he walks
+    // toward runs away from him, and the direction he advances IS the
+    // depth of the picture. It follows his ground position — x and
+    // depth alike — with a soft lag, and the sun (with its shadow box)
+    // travels with the focus so shadows stay put.
+    const pb = snap.basket;
+    const pFeetGY = Math.min(pb.y + 40, 702);
+    const pCharZ = depthZ(pFeetGY) + 104;
+    if (!camFollow.on || Math.hypot(pb.x - camFollow.x, pCharZ - camFollow.z) > 720) {
+      camFollow.x = pb.x; camFollow.z = pCharZ; camFollow.on = true;
+    }
+    const ck = Math.min(1, dt * 4.4);
+    camFollow.x += (pb.x - camFollow.x) * ck;
+    camFollow.z += (pCharZ - camFollow.z) * ck;
+    // framing (tuned in verification): 285 behind and 232 up keeps the
+    // camera above the canopy of the rows it trails through — at the
+    // first tuning (338 / 178) it sat inside the front row's leaves
+    // whenever the player walked to the back row
+    camera.position.set(camFollow.x + 28, 232, camFollow.z + 285);
+    camera.lookAt(
+      camFollow.x + Math.max(-46, Math.min(46, (pb.vx || 0) * 0.055)),
+      48, camFollow.z - 235
+    );
+    aimSun(camFollow.x, camFollow.z);
     if (snap.fieldKey !== propsKey) buildProps(snap);
     // the decorative backdrop rows are culled to the camera's slice too
-    farmGroup.children.forEach(function (m) { m.visible = Math.abs(m.position.x - camCx) < 780; });
+    farmGroup.children.forEach(function (m) { m.visible = Math.abs(m.position.x - camFollow.x) < 780; });
 
     // weather lighting
     const w = snap.weather;
@@ -5254,7 +5379,8 @@ function init() {
       basketP.rotation.z = -b.tilt;
       basketP.rotation.x = Math.sin(elapsed * 2.1) * 0.018 - b.sink * 0.05;
       charP.rotation.z = -b.tilt * 0.45;
-      charP.rotation.y = Math.max(-0.4, Math.min(0.4, (b.vx || 0) * 0.0006));
+      // v14: he turns to face the way he walks (idle: into the field)
+      faceToward(charP, b.vx || 0, b.vy || 0, dt);
       charP.rotation.x = Math.max(-0.13, Math.min(0.13, (b.vy || 0) * 0.00035));
       animChar(charP, b.vx || 0, b.vy || 0, b.face || "normal", dt, elapsed, baseY);
     }
@@ -5268,7 +5394,8 @@ function init() {
         basketR.position.y = (basketR.userData.homeY || 24) - r.sink * 6;
         basketR.rotation.z = -r.tilt;
         charR.rotation.z = -r.tilt * 0.45;
-        charR.rotation.y = Math.max(-0.4, Math.min(0.4, (r.vx || 0) * 0.0006));
+        // v14: Gon faces his walking direction too
+        faceToward(charR, r.vx || 0, r.vy || 0, dt);
         charR.rotation.x = Math.max(-0.13, Math.min(0.13, (r.vy || 0) * 0.00035));
         animChar(charR, r.vx || 0, r.vy || 0, r.face || "normal", dt, elapsed, baseY);
       } else charR.visible = false;
@@ -5331,7 +5458,9 @@ function init() {
         scene.add(g);
         itemMeshes.set(key, g);
       }
-      placeFruit(g, it.x, it.h, depthZ(it.gy) + (it.zo || 0), it.r, it.rot, it.type === 'overripe' ? 0.92 : 1, it.type === 'overripe' ? 1.04 : 1);
+      // v14: an out-of-reach tap shakes the fruit on the vine
+      const wobX = it.wob ? Math.sin(elapsed * 42 + it.id) * 6 * Math.min(1, it.wob / 0.55) : 0;
+      placeFruit(g, it.x + wobX, it.h, depthZ(it.gy) + (it.zo || 0), it.r, it.rot, it.type === 'overripe' ? 0.92 : 1, it.type === 'overripe' ? 1.04 : 1);
       if (it.best) {
         const pulse = 0.5 + 0.5 * Math.sin(elapsed * 6 + it.id);
         g.traverse(function (o) {
@@ -5483,7 +5612,7 @@ function init() {
 
     // rain
     rain.visible = !!snap.raining;
-    if (snap.raining) updateRain3d(dt, camCx);
+    if (snap.raining) updateRain3d(dt, camFollow.x);
 
     // juice bursts
     for (let i = bursts.length - 1; i >= 0; i--) {
