@@ -462,7 +462,7 @@
       </div>
     </div>
   </div>
-  <div id="credit">しゅうかく見分け隊 v17 — Ap Robo Educational LLC — Kiroween 2026 / Costume Contest</div>
+  <div id="credit">しゅうかく見分け隊 v18 — Ap Robo Educational LLC — Kiroween 2026 / Costume Contest</div>
 </div>
 <script>
 "use strict";
@@ -1249,6 +1249,17 @@ function removeFruit(f) {
 // growth stages on the vine: sprout -> unripe -> half -> ripe -> overripe.
 // Sweetness widens the "best" window right after ripening; hardiness keeps
 // a fruit ripe longer before it turns overripe.
+// v18: how much longer the ripe / overripe bands last in real time than
+// the raw g-speed would give. A ripe fruit used to last only ~5-7 s —
+// less than a walk across the field (1680 units at 300 u/s) — so it
+// rotted before the player could reach it; the user played v17 and
+// said so (「腐るの早すぎ」). updateField now divides the growth step by
+// these while a fruit sits in the ripe / overripe band. The g
+// thresholds themselves are unchanged, so the best window still sits
+// at the front of ripe, and hardiness / sweetness / weather /
+// fertilizer keep their exact meanings.
+const RIPE_TIME_MUL = 2.75;
+const OVER_TIME_MUL = 2.0;
 function ripeEndOf(f) { return 0.75 + 0.16 + (f.variety ? f.variety.hardy : 2) * 0.014; }
 function fruitStage(f) {
   if (f.damaged) return "damaged";
@@ -1305,7 +1316,13 @@ function updateField(dt) {
     if (!paused) {
       // v8: during a ripening rush, marked fruit surges toward ripe
       const rmul = (rushT > 0 && f.rushBoost) ? 3.4 : 1;
-      f.g += dt * f.rate * rate * f.plant.gMul * rmul / 30;
+      let inc = dt * f.rate * rate * f.plant.gMul * rmul / 30;
+      // v18: ripe and overripe age in slow motion (RIPE_TIME_MUL /
+      // OVER_TIME_MUL above) — long enough to walk across the field
+      // and pick the fruit before it rots. Sprout / unripe / half
+      // keep the old pace, so the day's tempo is unchanged.
+      if (f.g >= 0.75) inc /= f.g < ripeEndOf(f) ? RIPE_TIME_MUL : OVER_TIME_MUL;
+      f.g += inc;
       if (f.rushBoost && f.g >= 0.75) f.rushBoost = false;
       if (weatherToday === "rain" && !f._rainRolled && f.g >= 0.75) {
         f._rainRolled = true;
@@ -3956,8 +3973,8 @@ function buildZukan() {
         (v.gen > 0 ? " ・ " + (v.gen + 1) + T().gen + " ・ " + T().parents + ": " + parentNames : "") +
         "<br>" + T().fxHead + ": " +
         T().fxSize.replace("%d", String(Math.round(v.size * 3))) + " / " +
-        T().fxSweet.replace("%d", ((0.045 + v.sweet * 0.009) * 30).toFixed(1)) + " / " +
-        T().fxHardy.replace("%a", ((0.16 + v.hardy * 0.014) * 30).toFixed(1)).replace("%b", String((v.hardy - 1) * 17)) +
+        T().fxSweet.replace("%d", ((0.045 + v.sweet * 0.009) * 30 * RIPE_TIME_MUL).toFixed(1)) + " / " +
+        T().fxHardy.replace("%a", ((0.16 + v.hardy * 0.014) * 30 * RIPE_TIME_MUL).toFixed(1)).replace("%b", String((v.hardy - 1) * 17)) +
         "</div>";
       row.appendChild(txt);
       list.appendChild(row);
