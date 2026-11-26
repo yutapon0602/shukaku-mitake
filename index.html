@@ -4,6 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>しゅうかく見分け隊 | Harvest Sort Patrol</title>
+<!-- v16: ask browsers not to keep a stale copy of this page (the user
+     hit an old version from cache). GitHub Pages sets its own headers,
+     so this is best-effort — the in-page version stamp is the check. -->
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <script type="importmap">{"imports":{"three":"./vendor/three.module.js","three/addons/":"./vendor/addons/"}}</script>
 <style>
   * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
@@ -96,6 +102,23 @@
     content:""; position:absolute; left:-9px; top:50%; margin-top:-6px;
     border:6px solid transparent; border-right-color:#fffef8; border-left:0;
   }
+  /* v16: boot loading screen — the ONLY thing shown until the 3D layer
+     is ready (or has genuinely failed, when it stays up as a text-only
+     notice). v15 and earlier drew the old 2D title/field art behind
+     the title while the models loaded, which read as "the old game's
+     pictures". */
+  #loadScreen {
+    position:absolute; inset:0; z-index:60; display:flex; flex-direction:column;
+    align-items:center; justify-content:center; text-align:center;
+    background:linear-gradient(180deg,#79b5e0 0%,#a8d3f0 55%,#cfe8b8 100%);
+    transition:opacity .45s; padding:24px;
+  }
+  #loadScreen.done { opacity:0; pointer-events:none; }
+  #loadScreen .lt { font-size:clamp(26px,8vw,40px); font-weight:900; color:#fff; letter-spacing:.04em; text-shadow:0 2px 0 rgba(90,60,20,.45); }
+  #loadScreen .le { color:#fff; letter-spacing:.22em; font-weight:700; font-size:13px; text-shadow:0 1px 2px rgba(90,60,20,.4); margin-top:2px; }
+  #loadScreen .lm { margin-top:26px; color:#4a2f14; font-weight:800; background:rgba(255,248,234,.92); padding:6px 18px; border-radius:999px; }
+  #loadBarWrap { width:min(70%,300px); height:12px; background:rgba(255,255,255,.55); border-radius:999px; margin-top:14px; overflow:hidden; box-shadow:inset 0 1px 3px rgba(90,60,20,.3); }
+  #loadBar { height:100%; width:0%; background:linear-gradient(90deg,#f0563a,#ffc93c); border-radius:999px; transition:width .3s; }
   #toast {
     position:absolute; left:50%; top:118px; transform:translate(-50%,-16px);
     background:linear-gradient(180deg,#ffe97a,#ffc93c); color:#7a5200;
@@ -216,6 +239,12 @@
   <div id="stage">
     <canvas id="gl" width="480" height="720"></canvas>
     <canvas id="game" width="480" height="720"></canvas>
+    <div id="loadScreen">
+      <div class="lt">しゅうかく見分け隊</div>
+      <div class="le">HARVEST SORT PATROL</div>
+      <div class="lm" id="loadMsg">読み込み中…</div>
+      <div id="loadBarWrap"><div id="loadBar"></div></div>
+    </div>
     <button id="muteBtn" type="button">🔊</button>
     <button id="langBtn" type="button">EN</button>
     <div id="toast"></div>
@@ -416,7 +445,7 @@
       </div>
     </div>
   </div>
-  <div id="credit">しゅうかく見分け隊 v15 — Ap Robo Educational LLC — Kiroween 2026 / Costume Contest</div>
+  <div id="credit">しゅうかく見分け隊 v16 — Ap Robo Educational LLC — Kiroween 2026 / Costume Contest</div>
 </div>
 <script>
 "use strict";
@@ -424,15 +453,53 @@ const W = 480, H = 720;
 const cv = document.getElementById("game");
 const ctx = cv.getContext("2d");
 
+// ---------- v16: boot gate ----------
+// Until the 3D layer reports ready, the loading screen is the only
+// thing on the stage: v15 and earlier let the 2D renderer paint the
+// title and field art underneath while the models streamed in, and
+// the user read that as the old game's pictures flashing up. There
+// is no 2D fallback any more (v16 cleanup: the old illustrations
+// were deleted). If the 3D layer genuinely fails — no WebGL, a
+// model error, or no answer for a long while — the boot screen
+// stays up as a TEXT-ONLY notice; if the layer still arrives later,
+// bootFinish lifts the screen and the game appears (self-healing).
+let bootDone = false;
+function bootFinish() {
+  if (bootDone) return;
+  bootDone = true;
+  const ls = document.getElementById("loadScreen");
+  if (ls) {
+    ls.classList.add("done");
+    setTimeout(function () { ls.style.display = "none"; }, 500);
+  }
+}
+function bootNotice() {
+  if (bootDone) return;
+  const ls = document.getElementById("loadScreen");
+  if (!ls || ls.classList.contains("done")) return;
+  const msg = document.getElementById("loadMsg");
+  if (msg) msg.innerHTML = "この環境では3D表示が使えません<br><span style=\"font-size:12px\">WebGLに対応したブラウザで開いてください / 3D is not available in this environment.</span>";
+  const wrap = document.getElementById("loadBarWrap");
+  if (wrap) wrap.style.display = "none";
+}
+window.__bootProgress = function (frac) {
+  const bar = document.getElementById("loadBar");
+  if (bar) bar.style.width = Math.round(Math.max(0, Math.min(1, frac)) * 100) + "%";
+};
+window.__onH3dFailed = function () { bootNotice(); };
+setTimeout(function () {
+  if (!bootDone && !(typeof window.__h3dReady === "function" && window.__h3dReady())) bootNotice();
+}, 30000);
+
 // ---------- i18n ----------
 const STR = {
   ja: {
     title: "しゅうかく見分け隊", over: "しゅうかく終了！", start: "スタート", retry: "もう一度",
     continue: "つづきから", newGame: "はじめから",
-    howto: "畑の株でトマトが育つ。<b>完熟（真っ赤）になった実</b>のそばまで歩いて、タップして収穫しよう（遠くからでは手が届かない）。完熟直後の「ベスト」収穫で高得点。畑で種を植えて育て、交配で新しい品種を作り、秋の品評会で入賞を目指そう。ベスト収穫をつなげてフィーバー！（PC: WASD・矢印キーで移動、クリックかスペースキーで収穫）",
+    howto: "畑の株でトマトが育つ。画面は<b>あなたの目線（一人称）</b>。<b>完熟（真っ赤）になった実</b>のそばまで歩いて、目の前の実をタップして収穫しよう（遠くからでは手が届かない）。完熟直後の「ベスト」収穫で高得点。畑で種を植えて育て、交配で新しい品種を作り、秋の品評会で入賞を目指そう。ベスト収穫をつなげてフィーバー！（PC: WASD・矢印キーで移動、クリックかスペースキーで収穫）",
     lgRipe: "完熟 = 取る", lgUnripe: "青い = まだ待つ", lgHalf: "色づき途中 = 待つ",
     lgOver: "過熟 = 安値で出荷", lgDamaged: "傷んだ = 取らない", lgGold: "金のトマト = 必ず取る",
-    controls: "ドラッグ／WASD・矢印キーで歩き回り、実のそばでタップ／クリック／スペースキーで収穫します",
+    controls: "一人称の目線で、ドラッグ／WASD・矢印キーで歩き回り、目の前の実をタップ／クリック／スペースキーで収穫します",
     score: "スコア", best: "ベスト",
     caught: "収穫数", good: "見逃し正解", miss: "ミス",
     accuracy: "正解率", maxCombo: "最大コンボ", days: "到達日数",
@@ -542,10 +609,10 @@ const STR = {
   en: {
     title: "Harvest Sort Patrol", over: "Harvest Complete!", start: "START", retry: "Play Again",
     continue: "Continue", newGame: "New Game",
-    howto: "Tomatoes grow on the plants in your field. Walk right up to a <b>fully ripe (deep red) fruit</b> and tap to pick it — your arms can't reach from far away. Pick right after ripening for a PERFECT bonus. Plant and raise seeds, cross varieties to breed new ones, and aim for a prize at the autumn harvest fair. Chain perfect picks for FEVER! (PC: WASD / arrow keys to walk, click or Space to pick.)",
+    howto: "Tomatoes grow on the plants in your field. You see the field <b>through your own eyes (first person)</b>. Walk right up to a <b>fully ripe (deep red) fruit</b> and tap the fruit in front of you to pick it — your arms can't reach from far away. Pick right after ripening for a PERFECT bonus. Plant and raise seeds, cross varieties to breed new ones, and aim for a prize at the autumn harvest fair. Chain perfect picks for FEVER! (PC: WASD / arrow keys to walk, click or Space to pick.)",
     lgRipe: "Ripe = PICK", lgUnripe: "Green = WAIT", lgHalf: "Half-colored = WAIT",
     lgOver: "Overripe = CHEAP", lgDamaged: "Damaged = DON'T PICK", lgGold: "Golden = ALWAYS PICK",
-    controls: "Walk with drag, WASD or arrow keys; tap, click, or press Space up close to pick",
+    controls: "First-person view: walk with drag, WASD or arrow keys; tap, click, or press Space to pick the fruit in front of you",
     score: "SCORE", best: "BEST",
     caught: "Harvested", good: "Good dodges", miss: "Misses",
     accuracy: "Accuracy", maxCombo: "Max combo", days: "Days reached",
@@ -873,8 +940,6 @@ function absToSeasonDay(a) { return { s: Math.floor((a - 1) / SEASON_DAYS) + 1, 
 
 // ---------- day / difficulty ----------
 function dayQuota() { return Math.max(3, Math.ceil((5 + (absDay() - 1) * 2) * DIFFS[diff].quota)); }
-function daySpeed() { return (128 + (absDay() - 1) * 26) * DIFFS[diff].speed; }
-function dayInterval() { return Math.max(0.4, 0.95 - (absDay() - 1) * 0.085) * DIFFS[diff].interval; }
 function windMaxFor() { const a = absDay(); return a >= 3 ? Math.min(86, 30 + (a - 3) * 16) : 0; }
 
 // ---------- weather ----------
@@ -1008,31 +1073,6 @@ function plantedStage(vid) {
   });
   return bestStage;
 }
-function pickVariety() {
-  const pool = [];
-  farm.varieties.forEach(function (v) {
-    const st = plantedStage(v.id);
-    let w;
-    if (st >= 3) w = 5;          // fruiting: its good fruit dominates the drop
-    else if (st >= 0) w = 2;     // planted: appears more
-    else if (v.gen === 0) w = 1; // base varieties always grow somewhere on the farm
-    else w = 0;                  // bred varieties must be planted to appear
-    if (w > 0) pool.push({ v: v, w: w, fruiting: st >= 3 });
-  });
-  if (!pool.length) return { v: farm.varieties[0], fruiting: false };
-  let sum = 0;
-  pool.forEach(function (e) { sum += e.w; });
-  let r = Math.random() * sum;
-  for (let i = 0; i < pool.length; i++) { r -= pool[i].w; if (r <= 0) return pool[i]; }
-  return pool[pool.length - 1];
-}
-function fruitingQuality(vid) {
-  let q = 0;
-  farm.plots.forEach(function (p) {
-    if (p && p.vid === vid && stageOf(p) >= 3) q = Math.max(q, p.quality);
-  });
-  return q;
-}
 
 // ---------- v9: a wide, scrolling field ----------
 // The field is WW wide (3.5 screens) and split into 4 sections that map
@@ -1074,7 +1114,7 @@ function careGrowthMul() {
 
 // ---------- v9: tools (bought at the farm shop, kept across seasons) ----------
 function toolLv(k) { return (farm.tools && farm.tools[k]) || 0; }
-function basketMaxSpeed() { return 620 * (1 + 0.09 * toolLv("shoes")); }   // v15: 980 -> 620 — v14 felt frantic on a PC
+function basketMaxSpeed() { return 300 * (1 + 0.09 * toolLv("shoes")); }   // v16: 620 -> 300 — v15 was still far too fast on phone and PC alike (v14: 980)
 function crowMul() { return 1 + 0.45 * toolLv("scarecrow"); }
 function fertMul() { return 1 + 0.07 * toolLv("fert"); }
 const SHOP_ITEMS = [
@@ -1828,6 +1868,11 @@ function newRun() {
 }
 
 function startGame() {
+  // v16 fix: the game cannot be entered at all until the 3D layer is
+  // ready. Without WebGL the boot screen stays up as a text-only
+  // notice, and even a script-level click on Start must not slip the
+  // flow past it into the story / farm screens.
+  if (!bootDone) return;
   ac(); bgmStart();
   if (farm.run) {
     restoreRun();
@@ -1847,6 +1892,7 @@ function startGame() {
 }
 
 function startHarvest(kind) {
+  if (!bootDone) return;   // v16 fix: same boot gate as startGame
   ac(); bgmStart();
   dayCaught = 0; dayDodged = 0; dayMiss = 0;
   items = []; pops = []; corpses = [];
@@ -1923,65 +1969,7 @@ function skyFor(a) {
   return SKIES[(a - 1) % SKIES.length];
 }
 
-function drawBackground(dt) {
-  const sk = skyFor(absDay());
-  const sky = ctx.createLinearGradient(0, 0, 0, H);
-  sky.addColorStop(0, sk.top); sky.addColorStop(0.42, sk.mid);
-  sky.addColorStop(0.62, sk.hor); sky.addColorStop(1, "#e8c877");
-  ctx.fillStyle = sky; ctx.fillRect(0, 0, W, H);
-  // sun with glow
-  if (sk.sunR > 0) {
-    const sg = ctx.createRadialGradient(sk.sunX, sk.sunY, 4, sk.sunX, sk.sunY, sk.sunR * 2.4);
-    sg.addColorStop(0, sk.sunC); sg.addColorStop(0.35, sk.sunC); sg.addColorStop(1, "rgba(255,240,180,0)");
-    ctx.fillStyle = sg;
-    ctx.beginPath(); ctx.arc(sk.sunX, sk.sunY, sk.sunR * 2.4, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = sk.sunC;
-    ctx.beginPath(); ctx.arc(sk.sunX, sk.sunY, sk.sunR, 0, Math.PI * 2); ctx.fill();
-  }
-  // clouds
-  ctx.fillStyle = sk.cloud;
-  clouds.forEach(function (c) {
-    c.x += (c.v + windVal * 0.25) * dt;
-    if (c.x - 70 * c.s > W) c.x = -70 * c.s;
-    if (c.x + 70 * c.s < 0) c.x = W + 70 * c.s;
-    ctx.beginPath();
-    ctx.ellipse(c.x, c.y, 42 * c.s, 15 * c.s, 0, 0, Math.PI * 2);
-    ctx.ellipse(c.x - 26 * c.s, c.y + 4 * c.s, 26 * c.s, 11 * c.s, 0, 0, Math.PI * 2);
-    ctx.ellipse(c.x + 28 * c.s, c.y + 4 * c.s, 28 * c.s, 12 * c.s, 0, 0, Math.PI * 2);
-    ctx.fill();
-  });
-  // hills / field rows
-  ctx.fillStyle = sk.hill;
-  ctx.beginPath(); ctx.ellipse(W / 2, H + 130, W * 0.85, 210, 0, Math.PI, Math.PI * 2); ctx.fill();
-  ctx.strokeStyle = sk.row; ctx.lineWidth = 5;
-  for (let i = -3; i <= 3; i++) {
-    ctx.beginPath();
-    ctx.moveTo(W / 2 + i * 34, H - 118);
-    ctx.lineTo(W / 2 + i * 92, H + 6);
-    ctx.stroke();
-  }
-  // ground strip where items land
-  ctx.fillStyle = "rgba(122,74,33,.9)"; ctx.fillRect(0, GROUND_Y, W, H - GROUND_Y);
-  ctx.fillStyle = "rgba(255,255,255,.25)"; ctx.fillRect(0, GROUND_Y, W, 3);
-  if (sk.tint) { ctx.fillStyle = sk.tint; ctx.fillRect(0, 0, W, H); }
-  if (rainT > 0) { ctx.fillStyle = "rgba(40,60,95,.12)"; ctx.fillRect(0, 0, W, H); }
-}
 
-function drawRain(dt) {
-  if (!rainingNow()) return;
-  ctx.save();
-  ctx.strokeStyle = "rgba(190,220,250,.55)";
-  ctx.lineWidth = 1.6;
-  ctx.beginPath();
-  rainDrops.forEach(function (d) {
-    d.y += d.spd * dt; d.x += d.spd * 0.16 * dt;
-    if (d.y > H) { d.y = rand(-30, -5); d.x = rand(-20, W); }
-    ctx.moveTo(d.x, d.y);
-    ctx.lineTo(d.x - d.len * 0.16, d.y + d.len);
-  });
-  ctx.stroke();
-  ctx.restore();
-}
 
 // ---------- shipping crate (quota visualization) ----------
 function drawCrate() {
@@ -2023,15 +2011,6 @@ function drawCrate() {
   ctx.restore();
 }
 
-function drawTomatoShadow(it) {
-  const hgt = clamp((GROUND_Y - it.y) / 620, 0, 1);
-  ctx.save();
-  ctx.fillStyle = "rgba(60,35,5," + (0.28 * (1 - hgt * 0.65)).toFixed(3) + ")";
-  ctx.beginPath();
-  ctx.ellipse(it.x, GROUND_Y + 9, it.r * 1.25 * (1 - hgt * 0.45), 6 * (1 - hgt * 0.4), 0, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.restore();
-}
 
 function drawCalyxC(c, color, droop, r) {
   c.fillStyle = color;
@@ -2123,274 +2102,14 @@ function drawTomatoArt(c, type, r, variety) {
   }
 }
 
-function drawTomato(it) {
-  ctx.save();
-  ctx.translate(it.x, it.y);
-  ctx.rotate(it.rot + Math.sin(it.sway) * 0.06);
-  if (it.type === "overripe") ctx.scale(1.04, 0.92);
-  drawTomatoArt(ctx, it.type, it.r, it.variety);
-  ctx.restore();
-}
 
-function drawBug(it) {
-  ctx.save();
-  ctx.translate(it.x, it.y);
-  ctx.rotate(Math.sin(it.sway * 3) * 0.18);
-  const r = it.r, wig = Math.sin(it.sway * 14) * 3;
-  ctx.strokeStyle = "#241a12"; ctx.lineWidth = 2;
-  for (let i = -1; i <= 1; i++) {
-    ctx.beginPath(); ctx.moveTo(-r * 0.5, i * r * 0.4); ctx.lineTo(-r * 1.05, i * r * 0.55 + wig); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(r * 0.5, i * r * 0.4); ctx.lineTo(r * 1.05, i * r * 0.55 - wig); ctx.stroke();
-  }
-  const g = ctx.createRadialGradient(-r * 0.3, -r * 0.3, 2, 0, 0, r * 1.2);
-  g.addColorStop(0, "#6b4a2e"); g.addColorStop(1, "#2c1e12");
-  ctx.fillStyle = g;
-  ctx.beginPath(); ctx.ellipse(0, 0, r * 0.85, r, 0, 0, Math.PI * 2); ctx.fill();
-  ctx.strokeStyle = "rgba(0,0,0,.5)"; ctx.lineWidth = 1.5;
-  ctx.beginPath(); ctx.moveTo(0, -r * 0.95); ctx.lineTo(0, r * 0.8); ctx.stroke();
-  ctx.fillStyle = "#1d130b";
-  ctx.beginPath(); ctx.arc(0, -r * 0.95, r * 0.42, 0, Math.PI * 2); ctx.fill();
-  ctx.strokeStyle = "#1d130b"; ctx.lineWidth = 1.6;
-  ctx.beginPath(); ctx.moveTo(-r * 0.2, -r * 1.25); ctx.quadraticCurveTo(-r * 0.6, -r * 1.6, -r * 0.85, -r * 1.55); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(r * 0.2, -r * 1.25); ctx.quadraticCurveTo(r * 0.6, -r * 1.6, r * 0.85, -r * 1.55); ctx.stroke();
-  ctx.fillStyle = "#ff5040";
-  ctx.beginPath(); ctx.arc(-r * 0.16, -r * 1.0, r * 0.09, 0, Math.PI * 2); ctx.fill();
-  ctx.beginPath(); ctx.arc(r * 0.16, -r * 1.0, r * 0.09, 0, Math.PI * 2); ctx.fill();
-  ctx.restore();
-}
 
-function drawItem(it) { if (it.type === "bug") drawBug(it); else drawTomato(it); }
 
-// ---------- v7: 2D field drawing (fallback renderer) ----------
-function drawFieldPlant(p) {
-  const s = p.s;
-  const sway = Math.sin(elapsed * 1.4 + p.id * 1.7) * (1.5 + Math.abs(windVal) * 0.05);
-  ctx.save();
-  ctx.translate(p.x, p.y);
-  ctx.rotate(sway * 0.01);
-  // soil mound
-  ctx.fillStyle = "#7a4a21";
-  ctx.beginPath(); ctx.ellipse(0, 2, 46 * s, 9 * s, 0, 0, Math.PI * 2); ctx.fill();
-  ctx.fillStyle = "#96683a";
-  ctx.beginPath(); ctx.ellipse(0, 0, 36 * s, 7 * s, 0, 0, Math.PI * 2); ctx.fill();
-  // stems
-  ctx.strokeStyle = "#3f7a2a"; ctx.lineCap = "round";
-  ctx.lineWidth = 5 * s;
-  ctx.beginPath(); ctx.moveTo(0, 0); ctx.quadraticCurveTo(4 * s, -50 * s, 0, -96 * s); ctx.stroke();
-  ctx.lineWidth = 3.4 * s;
-  ctx.beginPath(); ctx.moveTo(0, -52 * s); ctx.quadraticCurveTo(-22 * s, -66 * s, -38 * s, -78 * s); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(0, -64 * s); ctx.quadraticCurveTo(24 * s, -78 * s, 38 * s, -92 * s); ctx.stroke();
-  // leaves
-  const leaf = function (x, y, len, ang) {
-    ctx.save(); ctx.translate(x * s, y * s); ctx.rotate(ang);
-    ctx.fillStyle = "#4c8a34";
-    ctx.beginPath(); ctx.ellipse(len * s / 2, 0, len * s / 2, len * s * 0.24, 0, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = "#5da244";
-    ctx.beginPath(); ctx.ellipse(len * s / 2, -len * s * 0.05, len * s * 0.36, len * s * 0.15, 0, 0, Math.PI * 2); ctx.fill();
-    ctx.restore();
-  };
-  leaf(-6, -96, 44, -0.5); leaf(6, -100, 40, Math.PI + 0.55);
-  leaf(-30, -72, 36, -0.9); leaf(30, -84, 38, Math.PI + 0.9);
-  leaf(-16, -52, 30, -0.3); leaf(18, -58, 30, Math.PI + 0.3);
-  leaf(0, -104, 26, -Math.PI / 2 + 0.3);
-  ctx.restore();
-  if (p.bugId) {
-    ctx.save();
-    ctx.fillStyle = "rgba(255,80,60,.9)";
-    ctx.font = "900 15px sans-serif";
-    ctx.textAlign = "center";
-    ctx.fillText("!", p.x + 26 * s, p.y - 128 * s);
-    ctx.restore();
-  }
-}
-
-function drawFieldFruit(f) {
-  const st = fruitStage(f);
-  ctx.save();
-  // v14: an out-of-reach tap shakes the fruit on the vine
-  const wobX = f.wobbleT > 0 ? Math.sin(elapsed * 42 + f.id) * 5 * Math.min(1, f.wobbleT / 0.55) : 0;
-  ctx.translate(f.x + wobX, f.y);
-  ctx.rotate(Math.sin(elapsed * 1.7 + f.id * 2.1) * 0.07);
-  if (st === "overripe") ctx.scale(1.04, 0.92);
-  const r = Math.max(9, f.r);
-  if (fruitBest(f)) {
-    const pulse = 1 + 0.08 * Math.sin(elapsed * 6 + f.id);
-    ctx.save();
-    ctx.scale(pulse, pulse);
-    ctx.strokeStyle = "rgba(255,217,77,.9)"; ctx.lineWidth = 3;
-    ctx.beginPath(); ctx.arc(0, 0, r + 4, 0, Math.PI * 2); ctx.stroke();
-    ctx.restore();
-  }
-  drawTomatoArt(ctx, fruitRenderType(f), r, f.variety);
-  // v8: countdown ring — how long this fruit stays good for
-  const rf = ripeFrac(f);
-  if (rf >= 0) {
-    const kind = ringKind(f);
-    ctx.save();
-    let col;
-    if (kind === "best" || kind === "gold") col = "#ffd94d";
-    else col = rf > 0.5 ? "#8fe388" : (rf > 0.25 ? "#ffd94d" : "#ff7a5c");
-    if (kind === "ripe" && rf < 0.25) ctx.globalAlpha = 0.55 + 0.45 * Math.sin(elapsed * 14);
-    ctx.strokeStyle = col; ctx.lineWidth = kind === "ripe" ? 3 : 4;
-    ctx.beginPath(); ctx.arc(0, 0, r + 5, -Math.PI / 2, -Math.PI / 2 + rf * Math.PI * 2); ctx.stroke();
-    ctx.restore();
-  }
-  // v8: rush-marked fruit twinkles gold while the wave is coming
-  if (rushT > 0 && f.rushBoost) {
-    ctx.save();
-    ctx.globalAlpha = Math.sin(elapsed * 10 + f.id * 3) > 0 ? 0.95 : 0.35;
-    ctx.fillStyle = "#ffd94d";
-    ctx.fillRect(-r - 9, -r - 7, 3.5, 3.5); ctx.fillRect(r + 5, -4, 3.5, 3.5); ctx.fillRect(1, -r - 11, 3.5, 3.5);
-    ctx.restore();
-  }
-  ctx.restore();
-}
-
-function drawCorpses2D() {
-  corpses.forEach(function (c) {
-    const p = Math.min(1, c.t / 0.5);
-    ctx.save();
-    ctx.globalAlpha = c.t > 0.3 ? Math.max(0, 1 - (c.t - 0.3) / 0.2) : 1;
-    ctx.translate(c.x, c.y);
-    ctx.rotate(c.rot || 0);
-    if (c.kind === "squash") ctx.scale(1.35, 0.34);
-    else if (c.kind === "catch") {
-      const sq = Math.sin(p * Math.PI);
-      ctx.scale(1 + 0.26 * sq, 1 - 0.42 * sq);
-      ctx.globalAlpha = 1 - p * p;
-    }
-    drawTomatoArt(ctx, c.type, c.r, { hue: c.hue });
-    ctx.restore();
-  });
-}
-
-function drawCrow2D() {
-  if (!crow) return;
-  if (crow.state === "warn") {
-    ctx.save();
-    ctx.fillStyle = "rgba(20,30,10," + (0.25 + 0.12 * Math.sin(elapsed * 10)).toFixed(3) + ")";
-    ctx.beginPath(); ctx.ellipse(crow.sx, crow.sy, 30, 8, 0, 0, Math.PI * 2); ctx.fill();
-    ctx.restore();
-  }
-  ctx.save();
-  ctx.translate(crow.x, crow.y);
-  ctx.scale((crow.dirx || 1) >= 0 ? 1 : -1, 1);
-  const flap = Math.sin(crow.flap) * 0.7;
-  ctx.fillStyle = "#17181c";
-  ctx.save(); ctx.rotate(-0.5 - flap * 0.5);
-  ctx.beginPath(); ctx.ellipse(-14, -6, 17, 5, -0.4, 0, Math.PI * 2); ctx.fill(); ctx.restore();
-  ctx.save(); ctx.rotate(0.3 + flap * 0.4);
-  ctx.beginPath(); ctx.ellipse(10, -8, 15, 4.6, 0.5, 0, Math.PI * 2); ctx.fill(); ctx.restore();
-  ctx.beginPath(); ctx.ellipse(0, 0, 16, 8.5, 0, 0, Math.PI * 2); ctx.fill();
-  ctx.beginPath(); ctx.arc(13, -3, 6.5, 0, Math.PI * 2); ctx.fill();
-  ctx.beginPath(); ctx.ellipse(-19, 2, 9, 3, 0.35, 0, Math.PI * 2); ctx.fill();
-  ctx.fillStyle = "#d88f26";
-  ctx.beginPath(); ctx.moveTo(18, -5); ctx.lineTo(27, -2.5); ctx.lineTo(18, -0.5); ctx.closePath(); ctx.fill();
-  ctx.restore();
-  if (crow.carry) {
-    ctx.save();
-    ctx.translate(crow.x, crow.y + crow.carry.r + 10);
-    ctx.rotate(elapsed * 2.2);
-    drawTomatoArt(ctx, crow.carry.type, crow.carry.r, { hue: crow.carry.hue });
-    ctx.restore();
-  }
-}
-
-function drawBasketShape(cx, cy, tilt, sink, isRival) {
-  const x = cx - BASKET_W / 2, y = cy - BASKET_H / 2 + sink * 7;
-  ctx.save();
-  ctx.fillStyle = "rgba(60,35,5,.3)";
-  ctx.beginPath(); ctx.ellipse(cx, cy + BASKET_H / 2 + 9, BASKET_W * 0.52, 7, 0, 0, Math.PI * 2); ctx.fill();
-  ctx.restore();
-
-  ctx.save();
-  ctx.translate(cx, y + BASKET_H);
-  ctx.rotate(tilt);
-  ctx.translate(-cx, -(y + BASKET_H));
-  if (!isRival && feverT > 0) { ctx.shadowColor = "rgba(255,200,40,.95)"; ctx.shadowBlur = 22; }
-  const g = ctx.createLinearGradient(0, y, 0, y + BASKET_H);
-  if (isRival) { g.addColorStop(0, "#7d9cc4"); g.addColorStop(1, "#4d6a94"); }
-  else { g.addColorStop(0, "#d29a58"); g.addColorStop(1, "#9a6530"); }
-  ctx.fillStyle = g;
-  ctx.beginPath();
-  ctx.moveTo(x, y); ctx.lineTo(x + BASKET_W, y);
-  ctx.lineTo(x + BASKET_W - 14, y + BASKET_H); ctx.lineTo(x + 14, y + BASKET_H);
-  ctx.closePath(); ctx.fill();
-  ctx.shadowBlur = 0;
-  ctx.strokeStyle = isRival ? "rgba(20,40,80,.45)" : "rgba(90,55,15,.45)"; ctx.lineWidth = 3;
-  for (let i = 1; i <= 3; i++) {
-    const yy = y + (BASKET_H / 4) * i;
-    ctx.beginPath(); ctx.moveTo(x + 4 + i * 3, yy); ctx.lineTo(x + BASKET_W - 4 - i * 3, yy); ctx.stroke();
-  }
-  ctx.strokeStyle = isRival ? "rgba(20,40,80,.28)" : "rgba(90,55,15,.28)"; ctx.lineWidth = 2.5;
-  for (let i = 1; i < 6; i++) {
-    const xx = x + (BASKET_W / 6) * i;
-    ctx.beginPath(); ctx.moveTo(xx, y + 3); ctx.lineTo(xx - 6 + i * 2, y + BASKET_H - 2); ctx.stroke();
-  }
-  ctx.fillStyle = isRival ? "#33507a" : "#7a4a21";
-  ctx.beginPath(); ctx.roundRect(x - 5, y - 9, BASKET_W + 10, 14, 7); ctx.fill();
-  ctx.fillStyle = "rgba(255,235,190,.5)";
-  ctx.beginPath(); ctx.roundRect(x - 5, y - 9, BASKET_W + 10, 5, 3); ctx.fill();
-  ctx.restore();
-}
-// v8: a little farmer stands behind each basket — legs pumping when they
-// run, face reacting to the harvest (the 2D-fallback counterpart of the
-// 3D characters; the basket itself is drawn over the body, as if held)
-function drawCharacter2D(cx, cy, isRival) {
-  const face = isRival ? rivalFace() : playerFace();
-  const spd = isRival ? Math.hypot(rivalVX, rivalVY) : basketSpeed;
-  const run = Math.min(1, spd / 300);
-  const ph = elapsed * 13;
-  const bob = run * Math.abs(Math.sin(ph)) * 4 + (face === "happy" ? Math.abs(Math.sin(elapsed * 9)) * 5 : 0);
-  const skin = isRival ? "#e8b98a" : "#ffd9ae";
-  const shirt = isRival ? "#3d5a80" : "#5da244";
-  const hat = isRival ? "#8a6d3b" : "#f0c94e";
-  ctx.save();
-  ctx.translate(cx, cy);
-  // legs under the basket
-  ctx.strokeStyle = isRival ? "#4a3b2c" : "#5b4632"; ctx.lineWidth = 6; ctx.lineCap = "round";
-  const l1 = run * Math.sin(ph) * 10, l2 = run * Math.sin(ph + Math.PI) * 10;
-  ctx.beginPath(); ctx.moveTo(-7, 22); ctx.lineTo(-7 + l1, 46); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(7, 22); ctx.lineTo(7 + l2, 46); ctx.stroke();
-  // body
-  ctx.fillStyle = shirt;
-  ctx.beginPath(); ctx.roundRect(-17, -34 - bob, 34, 42, 9); ctx.fill();
-  // head
-  const hy = -52 - bob + (face === "sad" ? 3 : 0);
-  ctx.fillStyle = skin;
-  ctx.beginPath(); ctx.arc(0, hy, 14, 0, Math.PI * 2); ctx.fill();
-  if (isRival) { // Gon's grey beard
-    ctx.fillStyle = "#d9d9d9";
-    ctx.beginPath(); ctx.ellipse(0, hy + 8, 10, 8, 0, 0, Math.PI * 2); ctx.fill();
-  }
-  // face
-  ctx.fillStyle = "#33241a";
-  ctx.beginPath(); ctx.arc(-5, hy - 1, 1.7, 0, Math.PI * 2); ctx.fill();
-  ctx.beginPath(); ctx.arc(5, hy - 1, 1.7, 0, Math.PI * 2); ctx.fill();
-  ctx.strokeStyle = "#33241a"; ctx.lineWidth = 1.6;
-  ctx.beginPath();
-  if (face === "happy") ctx.arc(0, hy + 2, 5.5, 0.15 * Math.PI, 0.85 * Math.PI);
-  else if (face === "sad") ctx.arc(0, hy + 10, 5, 1.15 * Math.PI, 1.85 * Math.PI);
-  else if (face === "panic") { ctx.arc(0, hy + 5, 2.6, 0, Math.PI * 2); ctx.fillStyle = "#33241a"; ctx.fill(); }
-  else ctx.arc(0, hy + 3, 4, 0.2 * Math.PI, 0.8 * Math.PI);
-  ctx.stroke();
-  if (face === "panic") { // sweat drops
-    ctx.fillStyle = "#7ec3f0";
-    ctx.beginPath(); ctx.ellipse(-16, hy - 4 + Math.sin(elapsed * 12) * 2, 2.6, 4, 0, 0, Math.PI * 2); ctx.fill();
-    ctx.beginPath(); ctx.ellipse(16, hy - 2 + Math.cos(elapsed * 11) * 2, 2.6, 4, 0, 0, Math.PI * 2); ctx.fill();
-  }
-  // straw hat
-  ctx.fillStyle = hat;
-  ctx.beginPath(); ctx.ellipse(0, hy - 10, 19, 5.5, 0, 0, Math.PI * 2); ctx.fill();
-  ctx.beginPath(); ctx.arc(0, hy - 10, 10.5, Math.PI, Math.PI * 2); ctx.closePath(); ctx.fill();
-  // arms reaching down to the basket
-  ctx.strokeStyle = skin; ctx.lineWidth = 6;
-  ctx.beginPath(); ctx.moveTo(-15, -26 - bob); ctx.quadraticCurveTo(-24, -8, -20, 4); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(15, -26 - bob); ctx.quadraticCurveTo(24, -8, 20, 4); ctx.stroke();
-  ctx.restore();
-}
-function drawBasket() { drawCharacter2D(basketX, basketY, false); drawBasketShape(basketX, basketY, basketTilt, basketSink, false); }
-function drawRivalBasket() { drawCharacter2D(rival.x, rival.y, true); drawBasketShape(rival.x, rival.y, rival.tilt, rival.sink, true); }
+// ---------- 2D overlay art (HUD icons drawn over the 3D scene) ----------
+// v16 cleanup: the v7/v8 fallback field renderer that used to live
+// here (2D ground, plants, fruit, characters, baskets, weather) was
+// deleted in full. What remains in this section is small icon art
+// for the HUD and panels (crate, tomato icons) plus overlay bars.
 
 // v8: versus value bars — always on screen, the leader's bar glows and
 // pulses for a moment whenever the lead changes hands
@@ -2523,16 +2242,18 @@ function drawOrdersHUD(y0) {
   ctx.restore();
 }
 
-// v8: Gon's speech bubble (versus only) — drawn on the overlay canvas so
-// it reads the same over the 3D scene and the 2D fallback
+// v8: Gon's speech bubble (versus only) — drawn on the overlay canvas
+// over the 3D scene
 function drawRivalBubble() {
   if (mode !== "play" || playKind !== "versus" || rivalBubbleT <= 0 || !rivalBubble) return;
   ctx.save();
   ctx.globalAlpha = Math.min(1, rivalBubbleT * 2);
   ctx.font = "800 14px 'Hiragino Maru Gothic ProN','Noto Sans JP',sans-serif";
   const tw = ctx.measureText(rivalBubble).width + 22;
-  // v13: in 3D mode the bubble anchors to Gon's projected head, so it
-  // follows him through the depth of the field; 2D keeps the flat map.
+  // v13: the bubble anchors to Gon's projected head, so it follows
+  // him through the depth of the field. (The flat-map anchor below is
+  // only a defensive path if projection is ever unavailable; play
+  // mode itself requires the 3D layer — see the boot gate.)
   const useProj = typeof window.__h3dReady === "function" && window.__h3dReady() && typeof window.__h3dProject === "function";
   let anchorX, anchorY;
   if (useProj) {
@@ -2665,75 +2386,6 @@ function drawFeverAndBanner(now) {
 }
 
 // ---------- characters ----------
-function drawFarmer(el) {
-  if (!el) return;
-  const c = el.getContext("2d");
-  const s = el.width;
-  c.clearRect(0, 0, s, s);
-  c.fillStyle = "#4d7dc9";
-  c.beginPath(); c.roundRect(s * 0.2, s * 0.64, s * 0.6, s * 0.36, s * 0.1); c.fill();
-  c.fillStyle = "#e8e3d5";
-  c.beginPath(); c.roundRect(s * 0.36, s * 0.68, s * 0.28, s * 0.32, s * 0.05); c.fill();
-  c.fillStyle = "#ffcf9e";
-  c.beginPath(); c.arc(s * 0.5, s * 0.44, s * 0.21, 0, Math.PI * 2); c.fill();
-  c.beginPath(); c.arc(s * 0.29, s * 0.46, s * 0.05, 0, Math.PI * 2); c.fill();
-  c.beginPath(); c.arc(s * 0.71, s * 0.46, s * 0.05, 0, Math.PI * 2); c.fill();
-  c.fillStyle = "#33241a";
-  c.beginPath(); c.arc(s * 0.42, s * 0.44, s * 0.022, 0, Math.PI * 2); c.fill();
-  c.beginPath(); c.arc(s * 0.58, s * 0.44, s * 0.022, 0, Math.PI * 2); c.fill();
-  c.strokeStyle = "#33241a"; c.lineWidth = s * 0.018;
-  c.beginPath(); c.moveTo(s * 0.38, s * 0.385); c.lineTo(s * 0.46, s * 0.375); c.stroke();
-  c.beginPath(); c.moveTo(s * 0.54, s * 0.375); c.lineTo(s * 0.62, s * 0.385); c.stroke();
-  c.beginPath(); c.arc(s * 0.5, s * 0.5, s * 0.09, Math.PI * 0.15, Math.PI * 0.85); c.stroke();
-  c.fillStyle = "rgba(255,130,110,.45)";
-  c.beginPath(); c.ellipse(s * 0.35, s * 0.52, s * 0.045, s * 0.028, 0, 0, Math.PI * 2); c.fill();
-  c.beginPath(); c.ellipse(s * 0.65, s * 0.52, s * 0.045, s * 0.028, 0, 0, Math.PI * 2); c.fill();
-  c.fillStyle = "#f0c94e";
-  c.beginPath(); c.arc(s * 0.5, s * 0.31, s * 0.185, Math.PI, Math.PI * 2); c.closePath(); c.fill();
-  c.fillStyle = "#d63a1e";
-  c.fillRect(s * 0.315, s * 0.275, s * 0.37, s * 0.045);
-  c.fillStyle = "#f0c94e";
-  c.beginPath(); c.ellipse(s * 0.5, s * 0.325, s * 0.35, s * 0.085, 0, 0, Math.PI * 2); c.fill();
-  c.strokeStyle = "#d9a92e"; c.lineWidth = s * 0.014;
-  c.beginPath(); c.ellipse(s * 0.5, s * 0.325, s * 0.35, s * 0.085, 0, 0, Math.PI * 2); c.stroke();
-}
-function drawTrainee(el) {
-  if (!el) return;
-  const c = el.getContext("2d");
-  const s = el.width;
-  c.clearRect(0, 0, s, s);
-  // body (green work shirt)
-  c.fillStyle = "#5da244";
-  c.beginPath(); c.roundRect(s * 0.2, s * 0.64, s * 0.6, s * 0.36, s * 0.1); c.fill();
-  c.fillStyle = "#fff8ea";
-  c.beginPath(); c.roundRect(s * 0.4, s * 0.68, s * 0.2, s * 0.32, s * 0.05); c.fill();
-  // face
-  c.fillStyle = "#ffd9ae";
-  c.beginPath(); c.arc(s * 0.5, s * 0.44, s * 0.21, 0, Math.PI * 2); c.fill();
-  c.beginPath(); c.arc(s * 0.29, s * 0.46, s * 0.05, 0, Math.PI * 2); c.fill();
-  c.beginPath(); c.arc(s * 0.71, s * 0.46, s * 0.05, 0, Math.PI * 2); c.fill();
-  // hair
-  c.fillStyle = "#3a2a1a";
-  c.beginPath(); c.arc(s * 0.5, s * 0.38, s * 0.21, Math.PI * 1.02, Math.PI * 1.98); c.closePath(); c.fill();
-  // cap
-  c.fillStyle = "#d63a1e";
-  c.beginPath(); c.arc(s * 0.5, s * 0.3, s * 0.17, Math.PI, Math.PI * 2); c.closePath(); c.fill();
-  c.beginPath(); c.ellipse(s * 0.5, s * 0.31, s * 0.27, s * 0.05, 0, 0, Math.PI * 2); c.fill();
-  // eyes / mouth (determined)
-  c.fillStyle = "#33241a";
-  c.beginPath(); c.arc(s * 0.42, s * 0.45, s * 0.024, 0, Math.PI * 2); c.fill();
-  c.beginPath(); c.arc(s * 0.58, s * 0.45, s * 0.024, 0, Math.PI * 2); c.fill();
-  c.strokeStyle = "#33241a"; c.lineWidth = s * 0.018;
-  c.beginPath(); c.moveTo(s * 0.44, s * 0.56); c.lineTo(s * 0.56, s * 0.56); c.stroke();
-  c.fillStyle = "rgba(255,130,110,.4)";
-  c.beginPath(); c.ellipse(s * 0.35, s * 0.52, s * 0.045, s * 0.028, 0, 0, Math.PI * 2); c.fill();
-  c.beginPath(); c.ellipse(s * 0.65, s * 0.52, s * 0.045, s * 0.028, 0, 0, Math.PI * 2); c.fill();
-}
-function drawAllFarmers() {
-  ["farmerTitle", "farmerDay", "farmerOver", "farmerEnd", "farmerFarm"].forEach(function (id) {
-    drawFarmer(document.getElementById(id));
-  });
-}
 
 // ---------- plant art (farm screen plot cards) ----------
 function drawPlant(c, p, w, h) {
@@ -3340,8 +2992,8 @@ function update(dt) {
   if (keysDown["KeyS"] || keysDown["ArrowDown"]) kbY += 1;
   if (kbX !== 0 || kbY !== 0) {
     const kl = Math.hypot(kbX, kbY);
-    targetX = clamp(basketX + (kbX / kl) * 190, 46, WW - 46);
-    targetY = clamp(basketY + (kbY / kl) * 190, 196, 690);
+    targetX = clamp(basketX + (kbX / kl) * 150, 46, WW - 46);
+    targetY = clamp(basketY + (kbY / kl) * 150, 196, 690);
     kbDrive = true;
   } else if (kbDrive) {
     targetX = basketX; targetY = basketY;
@@ -3361,13 +3013,18 @@ function update(dt) {
   const dd = Math.hypot(dx, dy);
   let desVX = 0, desVY = 0;
   if (dd > 1) {
-    const sp = Math.min(basketMaxSpeed(), dd / 0.16);
+    const sp = Math.min(basketMaxSpeed(), dd / 0.30);   // v16: gentler arrive — full speed only when the target is far
     desVX = dx / dd * sp; desVY = dy / dd * sp;
   }
-  const accK = Math.min(1, dt * 6.5);
+  // v16 fix: with no drive target (key released / target reached) the
+  // gentle relax let the basket overshoot ~42 units past the release
+  // point and then wobble back to it — it read as sliding. Brake hard
+  // in that case only; the soft relax still shapes starts and turns.
+  const braking = (desVX === 0 && desVY === 0);
+  const accK = Math.min(1, dt * (braking ? 11 : 3.4));   // v16: slower relax toward the desired velocity — soft starts, soft stops, lazy turns
   moveVX += (desVX - moveVX) * accK;
   moveVY += (desVY - moveVY) * accK;
-  if (desVX === 0 && desVY === 0 && Math.hypot(moveVX, moveVY) < 6) { moveVX = 0; moveVY = 0; }
+  if (braking && Math.hypot(moveVX, moveVY) < 30) { moveVX = 0; moveVY = 0; }
   basketX += moveVX * dt;
   basketY += moveVY * dt;
   basketX = clamp(basketX, 46, WW - 46);
@@ -3593,46 +3250,14 @@ function frame(ts) {
     drawCrate();
     window.__h3dFrame(dt, h3dSnapshot());
   } else {
-    drawBackground(dt);
-    drawCrate();
-    if (mode === "play") update(dt);
-    else {
-      updateParts(dt);
-      if (feedbackTimer > 0) feedbackTimer -= dt;
-      if (mode === "ending") {
-        endConfettiT -= dt;
-        if (endConfettiT > 0 && Math.random() < dt * 14) spawnConfetti(2);
-      }
-    }
-    if (mode === "play") {
-      ctx.save();
-      ctx.translate(-camX, 0);
-      drawWorldGround();
-      plants.forEach(drawFieldPlant);
-      fruits.forEach(drawFieldFruit);
-      bugs.forEach(function (b) { drawBug({ x: b.x, y: b.y, r: 15, sway: b.sway }); });
-      flies.forEach(function (fl) {
-        ctx.save();
-        ctx.translate(fl.x, fl.y);
-        ctx.rotate(fl.rot);
-        drawTomatoArt(ctx, fl.type, fl.r, fl.variety);
-        ctx.restore();
-      });
-      drawCorpses2D();
-      drawPops();
-      drawParts();
-      if (playKind === "versus") drawRivalBasket();
-      drawBasket();
-      drawCrow2D();
-      ctx.restore();
-    } else {
-      drawPops();
-      drawParts();
-      if (mode === "dayclear" || mode === "over" || mode === "ending") {
-        ctx.save(); ctx.translate(W / 2 - basketX, 0); drawBasket(); ctx.restore();
-      }
-    }
-    drawRain(dt);
+    // v16 cleanup: there is no 2D fallback renderer any more. The
+    // old fallback illustrations (2D field, plants, characters,
+    // weather) were deleted at the user's request — 不要なコードや
+    // イラストは残さない. While the 3D layer loads, the boot screen
+    // covers the stage; if WebGL is unavailable the boot screen
+    // stays up as a text-only notice (see bootNotice). The game
+    // state does not advance without the 3D layer.
+    ctx.clearRect(-12, -12, W + 24, H + 24);
   }
   if (mode === "play" || mode === "dayclear" || mode === "over" || mode === "ending") drawHUD();
   if (mode === "play") drawIndicators();
@@ -3649,72 +3274,6 @@ function frame(ts) {
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
-
-// v9: 2D-fallback ground for the wide field — per-section soil tint,
-// paths between the sections, weeds on empty land, simple landmarks
-function drawWorldGround() {
-  const g = ctx.createLinearGradient(0, 150, 0, H);
-  g.addColorStop(0, "#7ec850"); g.addColorStop(0.35, "#79bd49"); g.addColorStop(1, "#5da83a");
-  ctx.fillStyle = g;
-  ctx.fillRect(camX - 4, 150, W + 8, H - 150);
-  sections.forEach(function (sec) {
-    const soilCol = sec.kind === "plot" ? "rgba(138,97,54,0.30)" : sec.kind === "wild" ? "rgba(95,143,62,0.35)" : "rgba(151,153,94,0.38)";
-    ctx.fillStyle = soilCol;
-    ctx.fillRect(sec.x0 + 10, 168, SEC_W - 20, 522);
-    ctx.strokeStyle = "rgba(90,60,30,0.18)";
-    ctx.lineWidth = 3;
-    for (let fx = sec.x0 + 52; fx < sec.x1 - 20; fx += 58) {
-      ctx.beginPath(); ctx.moveTo(fx, 176); ctx.lineTo(fx, 684); ctx.stroke();
-    }
-    if (sec.kind === "empty" || sec.kind === "wild") {
-      sec.weeds.forEach(function (wd) {
-        ctx.strokeStyle = "#4c8a34"; ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.moveTo(wd.x, wd.y); ctx.lineTo(wd.x - 3, wd.y - wd.s);
-        ctx.moveTo(wd.x, wd.y); ctx.lineTo(wd.x + 3, wd.y - wd.s * 1.1);
-        ctx.stroke();
-      });
-    }
-  });
-  ctx.fillStyle = "#c9a86a";
-  for (let si = 1; si < 4; si++) ctx.fillRect(si * SEC_W - 15, 160, 30, 540);
-  ctx.fillStyle = "#8a6136";
-  ctx.fillRect(camX - 4, GROUND_Y, W + 8, H - GROUND_Y);
-  fieldProps.forEach(drawProp2D);
-}
-function drawProp2D(p) {
-  ctx.save();
-  ctx.translate(p.x, p.y);
-  if (p.type === "sign") {
-    ctx.fillStyle = "#7a5230"; ctx.fillRect(-4, -26, 8, 52);
-    ctx.fillStyle = "#a4713e"; ctx.beginPath(); ctx.roundRect(-30, -56, 60, 34, 5); ctx.fill();
-    ctx.fillStyle = "#fff"; ctx.font = "bold 20px sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
-    ctx.fillText(String(p.sec + 1), 0, -39);
-  } else if (p.type === "tree") {
-    ctx.fillStyle = "#6e4a26"; ctx.fillRect(-7, -34, 14, 60);
-    ctx.fillStyle = "#3f7d2c";
-    [[0, -62, 34], [-24, -40, 24], [24, -40, 24]].forEach(function (c) {
-      ctx.beginPath(); ctx.arc(c[0], c[1], c[2], 0, 7); ctx.fill();
-    });
-  } else if (p.type === "hut") {
-    ctx.fillStyle = "#b08954"; ctx.fillRect(-46, -58, 92, 84);
-    ctx.fillStyle = "#8a4b2a";
-    ctx.beginPath(); ctx.moveTo(-58, -58); ctx.lineTo(0, -96); ctx.lineTo(58, -58); ctx.closePath(); ctx.fill();
-    ctx.fillStyle = "#5b3a1e"; ctx.fillRect(-12, -22, 24, 48);
-  } else if (p.type === "pond") {
-    ctx.fillStyle = "#7cc7e8";
-    ctx.beginPath(); ctx.ellipse(0, 0, 66, 16, 0, 0, 7); ctx.fill();
-    ctx.strokeStyle = "#4aa3c7"; ctx.lineWidth = 3; ctx.stroke();
-  } else if (p.type === "scarecrow") {
-    ctx.fillStyle = "#8a6a3a"; ctx.fillRect(-3, -52, 6, 78);
-    ctx.fillRect(-26, -40, 52, 5);
-    ctx.fillStyle = "#e8c96a"; ctx.beginPath(); ctx.arc(0, -60, 12, 0, 7); ctx.fill();
-    ctx.fillStyle = "#c96a2a"; ctx.fillRect(-14, -74, 28, 7);
-    ctx.fillStyle = "#5b7fa6";
-    ctx.beginPath(); ctx.moveTo(-16, -38); ctx.lineTo(16, -38); ctx.lineTo(10, 8); ctx.lineTo(-10, 8); ctx.closePath(); ctx.fill();
-  }
-  ctx.restore();
-}
 
 // v9: off-screen guidance — arrows at the screen edges for ripe / best
 // fruit (gold = best, red = ripe, blinking when little time is left),
@@ -3859,11 +3418,10 @@ function handleTap(x, y) {
   if (bestF) { pickFruit(bestF, "you"); return true; }
   return false;
 }
-// v13: with the 3D layer live, a tap is resolved in 3D — the fruit (or
-// pest, or crow) actually drawn under the finger is picked, wherever
-// its row is, and a ground tap walks the player to that very spot on
-// the ground plane (front rows and back rows alike). The 2D fallback
-// keeps the flat handleTap mapping untouched.
+// v13: a tap is resolved in 3D — the fruit (or pest, or crow)
+// actually drawn under the finger is picked, wherever its row is,
+// and a ground tap walks the player to that very spot on the ground
+// plane (front rows and back rows alike).
 function h3dInput() {
   return typeof window.__h3dReady === "function" && window.__h3dReady() && typeof window.__h3dPickAt === "function";
 }
@@ -3980,7 +3538,11 @@ function renderStoryLine() {
   if (!line) { finishStory(); return; }
   const cvEl = document.getElementById("farmerStory");
   window.__faceWho = line.who;
-  if (line.who === "trainee") drawTrainee(cvEl); else drawFarmer(cvEl);
+  // v16 cleanup: the 2D face illustrations that used to be drawn
+  // here were deleted with the rest of the fallback art. The live
+  // 3D bust (__h3dFaceFrame) paints this canvas every frame; the
+  // canvas is cleared so no stale face lingers between speakers.
+  cvEl.getContext("2d").clearRect(0, 0, cvEl.width, cvEl.height);
   document.getElementById("storyWho").textContent = line.who === "trainee" ? T().trainee : T().grandpa;
   document.getElementById("storyText").textContent = line[lang];
   document.getElementById("storyNextBtn").textContent =
@@ -4018,7 +3580,7 @@ function enterFarm() {
   buildFarm();
   showScreen("farmScreen");
 }
-// v10: one HTML builder for a plot's details — used by the fallback plot
+// v10: one HTML builder for a plot's details — used by the plot
 // cards and by the info line under the 3D farm view alike.
 function plotInfoHTML(p, i) {
   const t = T();
@@ -4438,6 +4000,7 @@ document.getElementById("closeAchBtn").addEventListener("click", function () { s
 // v10: when the 3D layer finishes loading, swap any open menu screen to
 // its 3D form (the frame loop picks up the stage scenes on its own).
 window.__onH3dReady = function () {
+  bootFinish();   // v16: the loading screen lifts only now
   if (mode === "farm") buildFarm();
   if (!document.getElementById("zukanScreen").classList.contains("hidden")) buildZukan();
   if (mode === "ending") refreshEndTrophy();
@@ -4477,6 +4040,10 @@ window.__setWeather = function (w) { weatherToday = w; };
 window.__setBasket = function (x, y) {
   targetX = x; basketX = x;
   if (typeof y === "number") { targetY = y; basketY = y; }
+  // v16 fix: a teleport is not motion — zero the drive and measured
+  // velocities so the squash rule (which reads basketSpeed) does not
+  // see a phantom sprint in the frames after a jump.
+  moveVX = 0; moveVY = 0; basketVX = 0; basketVY = 0; basketSpeed = 0;
 };
 window.__setVsT = function (s) { vsT = s; };
 window.__crowNow = function () { crowNext = 0; };
@@ -4531,14 +4098,15 @@ window.__enterFarm = function () { enterFarm(); };
 
 
 applyLang();
-drawAllFarmers();
 refreshTitle();
 </script>
 <script type="module">
 // ================= v6: real-time 3D harvest layer =================
 // Renders the play scene (field, fruit, baskets, crow, rain) from the
 // per-frame snapshot produced by the game logic. If anything fails to
-// load, window.__h3dReady() stays false and the game uses its 2D renderer.
+// load, window.__h3dReady() stays false, the boot screen remains as a
+// text-only notice, and the game cannot start — there is no 2D
+// renderer (v16 cleanup: the old fallback illustrations were deleted).
 import * as THREE from './vendor/three.module.js';
 import { GLTFLoader } from './vendor/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from './vendor/addons/libs/meshopt_decoder.module.js';
@@ -4554,7 +4122,12 @@ window.__h3dActive = function (on) {
   glCanvas.style.display = on ? 'block' : 'none';
 };
 
-try { init(); } catch (e) { console.warn('3D layer disabled:', e); }
+try { init(); } catch (e) {
+  console.warn('3D layer disabled:', e);
+  // v16: tell the boot gate the 3D layer is genuinely unavailable,
+  // so the boot screen stays up as a text-only notice
+  if (window.__onH3dFailed) window.__onH3dFailed();
+}
 
 function init() {
   const renderer = new THREE.WebGLRenderer({ canvas: glCanvas, antialias: true });
@@ -4617,6 +4190,7 @@ function init() {
   function depthZ(gy) { return (gy - GY_FRONT) * ZSCALE; }
   const CAM = { y: 340, z: 480, lookY: 0, lookZ: -300 };
   const camera = new THREE.PerspectiveCamera(62, GW / GH, 1, 6000);
+  scene.add(camera);   // v16: the first-person view basket is parented to the camera during play
   function aimCamera(cx, y, z, lookY, lookZ) {
     camera.position.set(cx, y != null ? y : CAM.y, z != null ? z : CAM.z);
     camera.lookAt(cx, lookY != null ? lookY : CAM.lookY, lookZ != null ? lookZ : CAM.lookZ);
@@ -4656,6 +4230,21 @@ function init() {
   );
   skyPlane.position.set(WW3 / 2, 430, -1500);
   scene.add(skyPlane);
+  // v16: a matching backdrop behind the front of the field, plus a
+  // scene background in the horizon colour. The v14/v15 shoulder
+  // camera only ever looked into the field (-z), so the one-sided
+  // sky was never missed; the first-person camera turns around —
+  // walking toward the front rows turns the picker to face +z, and
+  // without this the sky there was plain black (seen in v16
+  // verification at the back row).
+  const skyPlaneFront = new THREE.Mesh(
+    new THREE.PlaneGeometry(6200, 1700),
+    new THREE.MeshBasicMaterial({ map: skyTex, fog: false })
+  );
+  skyPlaneFront.position.set(WW3 / 2, 430, 1500);
+  skyPlaneFront.rotation.y = Math.PI;
+  scene.add(skyPlaneFront);
+  scene.background = new THREE.Color(0xdff3ff);
   let skyKey = '';
   function paintSky(s) {
     const key = s.top + '|' + s.mid + '|' + s.hor;
@@ -4667,6 +4256,7 @@ function init() {
     c.fillStyle = g; c.fillRect(0, 0, 4, 256);
     skyTex.needsUpdate = true;
     scene.fog.color.set(s.hor);
+    if (scene.background) scene.background.set(s.hor);   // v16: keep the all-directions sky in the same horizon colour
   }
 
   // ---- ground: soil near, grass far, with furrow stripes on the soil
@@ -4766,8 +4356,8 @@ function init() {
   // The cast used to be farmers assembled from cylinders and spheres.
   // They are now real human character models (from the MegaJam starter
   // pack FBX cast, decimated for the web). They load separately from
-  // loadJobs so a missing file only costs us the cast, never the whole
-  // 3D mode: the primitive farmers stay on as the fallback.
+  // loadJobs so a missing file only costs us that role's model (the
+  // role stays invisible), never the whole 3D mode.
   function normalizeChar(root, targetH) {
     const wrap = new THREE.Group();
     // v12: for a SkinnedMesh, Box3.setFromObject() estimates the box
@@ -4803,9 +4393,18 @@ function init() {
         }
       });
       protos['char_' + name] = normalizeChar(root, 100);
-    }).catch(function () { /* primitive fallback for this role */ });
+    }).catch(function () { /* this role stays model-less */ });
   });
   Promise.all(charJobs).then(function () { charLoadsSettled = true; });
+
+  // v16: feed the boot loading screen's progress bar — every model
+  // job (field models and cast alike) counts once, win or lose
+  const bootJobs = loadJobs.concat(charJobs);
+  let bootN = 0;
+  bootJobs.forEach(function (p) {
+    const bump = function () { bootN++; if (window.__bootProgress) window.__bootProgress(bootN / bootJobs.length); };
+    p.then(bump, bump);
+  });
 
   // ---- farm rows of tomato plants
   const farmGroup = new THREE.Group();
@@ -4896,88 +4495,6 @@ function init() {
   scene.add(crowShadow);
   let crowCarryMesh = null;
 
-  // ---- v8: farmer characters built from primitives -------------------
-  // A little farmer who carries the basket: legs pump when running, the
-  // whole body bobs and leans, arms hold the basket (and lift with joy),
-  // and the face swaps between smile / frown / worried by game state.
-  function makeFarmer3D(o) {
-    const M = function (c) { return new THREE.MeshStandardMaterial({ color: c, roughness: 0.85 }); };
-    const shirtM = M(o.shirt), pantsM = M(o.pants), skinM = M(o.skin), hatM = M(o.hat), darkM = M(0x33241a);
-    const g = new THREE.Group();
-    // legs on hip pivots
-    const legs = [];
-    [-1, 1].forEach(function (s) {
-      const hip = new THREE.Group(); hip.position.set(s * 7, 30, 0);
-      const leg = new THREE.Mesh(new THREE.CylinderGeometry(4.6, 5.2, 30, 8), pantsM);
-      leg.position.y = -15; leg.castShadow = true; hip.add(leg);
-      const boot = new THREE.Mesh(new THREE.BoxGeometry(9, 5, 14), M(0x5b4632));
-      boot.position.set(0, -29, 2.5); hip.add(boot);
-      g.add(hip); legs.push(hip);
-    });
-    // torso
-    const torso = new THREE.Mesh(new THREE.CylinderGeometry(13.5, 16.5, 34, 12), shirtM);
-    torso.position.y = 47; torso.castShadow = true; g.add(torso);
-    // arms on shoulder pivots, reaching forward to hold the basket
-    const arms = [];
-    [-1, 1].forEach(function (s) {
-      const sh = new THREE.Group(); sh.position.set(s * 16, 60, 0);
-      const arm = new THREE.Mesh(new THREE.CylinderGeometry(4.2, 3.8, 27, 8), shirtM);
-      arm.position.y = -13.5; arm.castShadow = true; sh.add(arm);
-      const hand = new THREE.Mesh(new THREE.SphereGeometry(4.4, 8, 8), skinM);
-      hand.position.y = -27; sh.add(hand);
-      sh.rotation.x = -0.95; sh.rotation.z = s * -0.18;
-      g.add(sh); arms.push(sh);
-    });
-    // head (face lives here so it can nod and shake)
-    const headG = new THREE.Group(); headG.position.y = 76; g.add(headG);
-    const head = new THREE.Mesh(new THREE.SphereGeometry(13, 16, 14), skinM);
-    head.castShadow = true; headG.add(head);
-    const brows = [];
-    [-1, 1].forEach(function (s) {
-      const eye = new THREE.Mesh(new THREE.SphereGeometry(1.7, 6, 6), darkM);
-      eye.position.set(s * 4.8, 1.5, 11.9); headG.add(eye);
-      const brow = new THREE.Mesh(new THREE.BoxGeometry(5.4, 1.6, 1.2), M(o.brow));
-      brow.position.set(s * 4.8, 5.4, 12.2); brow.rotation.z = s * -0.12;
-      brow.userData.side = s;
-      if (o.smug && s > 0) brow.position.y += 1.4;   // Gon's raised eyebrow
-      headG.add(brow); brows.push(brow);
-      const cheek = new THREE.Mesh(new THREE.SphereGeometry(2.7, 8, 8), M(0xff9d8a));
-      cheek.position.set(s * 8.2, -2.6, 10.2); cheek.scale.set(1, 0.62, 0.4); headG.add(cheek);
-    });
-    function mouthArc(flip, y) {
-      const m = new THREE.Mesh(new THREE.TorusGeometry(4.6, 1.05, 6, 14, Math.PI), darkM);
-      m.position.set(0, y, 12.1);
-      m.rotation.z = flip ? 0 : Math.PI;
-      m.visible = false;
-      headG.add(m);
-      return m;
-    }
-    const mouthSmile = mouthArc(false, -3.2); mouthSmile.visible = true;
-    const mouthSad = mouthArc(true, -6.4);
-    const mouthOpen = new THREE.Mesh(new THREE.SphereGeometry(2.6, 8, 8), darkM);
-    mouthOpen.position.set(0, -5, 12.1); mouthOpen.scale.set(1, 1.25, 0.5); mouthOpen.visible = false;
-    headG.add(mouthOpen);
-    // sweat drops (panic)
-    const sweats = [];
-    [-1, 1].forEach(function (s) {
-      const d = new THREE.Mesh(new THREE.SphereGeometry(2.6, 8, 8), M(0x7ec3f0));
-      d.position.set(s * 14.6, 3, 5); d.scale.set(0.7, 1.25, 0.7); d.visible = false;
-      headG.add(d); sweats.push(d);
-    });
-    // straw hat: brim + dome + band
-    const brim = new THREE.Mesh(new THREE.CylinderGeometry(19.5, 19.5, 2, 18), hatM);
-    brim.position.y = 8.6; brim.castShadow = true; headG.add(brim);
-    const dome = new THREE.Mesh(new THREE.SphereGeometry(11.5, 14, 10, 0, Math.PI * 2, 0, Math.PI / 2), hatM);
-    dome.position.y = 8.8; headG.add(dome);
-    const band = new THREE.Mesh(new THREE.CylinderGeometry(11.9, 11.9, 3.6, 14), M(o.band));
-    band.position.y = 10; headG.add(band);
-    if (o.beard) {
-      const beard = new THREE.Mesh(new THREE.SphereGeometry(10.5, 12, 10), M(0xd9d9d9));
-      beard.position.set(0, -7.6, 6.2); beard.scale.set(1.02, 0.78, 0.66); headG.add(beard);
-    }
-    g.userData = { legs: legs, arms: arms, headG: headG, brows: brows, mouthSmile: mouthSmile, mouthSad: mouthSad, mouthOpen: mouthOpen, sweats: sweats, phase: Math.random() * 6 };
-    return g;
-  }
   // ---- v11: human models have no bones, so they act with their whole
   // body — a bobbing stride, a forward lean at speed, a happy hop, a
   // sad droop, a panic shake. The group transform stays with the caller
@@ -5086,30 +4603,10 @@ function init() {
   function animChar(ch, vx, vy, face, dt, t, baseY) {
     if (ch.userData.rigged) { animRigged(ch, vx, vy, face, dt, t, baseY); return; }
     if (ch.userData.human) { animHuman(ch, vx, vy, face, dt, t, baseY); return; }
-    const u = ch.userData;
-    const spd = Math.hypot(vx, vy);
-    const run = Math.min(1, spd / 330);
-    u.phase += dt * (3 + spd * 0.04);
-    const sw = Math.sin(u.phase) * 0.8 * run;
-    u.legs[0].rotation.x = sw;
-    u.legs[1].rotation.x = -sw;
-    let lift = Math.abs(Math.sin(u.phase)) * 4.5 * run;
-    if (face === "happy") lift += Math.abs(Math.sin(t * 7.5)) * 8;
-    ch.position.y = baseY + lift;
-    if (face === "panic") ch.position.x += Math.sin(t * 42) * 1.4;
-    const armX = face === "happy" ? -1.55 : (face === "sad" ? -0.55 : -0.95 + Math.sin(u.phase) * 0.07 * run);
-    u.arms.forEach(function (a) { a.rotation.x += (armX - a.rotation.x) * Math.min(1, dt * 10); });
-    const headX = face === "sad" ? 0.4 : (face === "happy" ? -0.12 : 0);
-    u.headG.rotation.x += (headX - u.headG.rotation.x) * Math.min(1, dt * 8);
-    u.mouthSmile.visible = face === "normal" || face === "happy";
-    u.mouthSmile.scale.setScalar(face === "happy" ? 1.3 : 1);
-    u.mouthSad.visible = face === "sad";
-    u.mouthOpen.visible = face === "panic";
-    u.sweats.forEach(function (s, i) {
-      s.visible = face === "panic";
-      if (s.visible) s.position.y = 3 + Math.sin(t * 11 + i * 2.4) * 1.6;
-    });
-    u.brows.forEach(function (br) { br.rotation.z = face === "panic" ? br.userData.side * 0.5 : br.userData.side * -0.12; });
+    // v16 cleanup: the primitive-farmer acting path (legs / arms /
+    // face-swap meshes) was deleted with makeFarmer3D. A modelLess
+    // carrier has nothing to act with — it just rides at base height.
+    ch.position.y = baseY;
   }
 
   // ---- baskets
@@ -5128,13 +4625,18 @@ function init() {
   let charP = null, charR = null, charG = null, basketP = null, basketR = null;
   // v10: characters are also the cast of the menu scenes, so creation is
   // shared. charG is Grandpa (the story's other speaker).
-  // v11: each role uses its human model when it loaded and the primitive
-  // farmer otherwise. Human hands rest at their sides, so their baskets
-  // ride a little higher and further forward than the primitives'.
+  // v11: each role uses its human model. v16 cleanup: the primitive
+  // farmer fallback (makeFarmer3D) was deleted with the rest of the
+  // old stand-in art — if a model failed to load, the role is simply
+  // an invisible carrier for its basket (modelLess), never a
+  // primitive lookalike.
   function ensureChars() {
     if (charP || !protos.basket || !charLoadsSettled) return;
-    function cast(proto, clips, primOpts) {
-      return proto ? makeHuman3D(proto, clips) : makeFarmer3D(primOpts);
+    function cast(proto, clips) {
+      if (proto) return makeHuman3D(proto, clips);
+      const g = new THREE.Group();
+      g.userData.modelLess = true;
+      return g;
     }
     function carry(ch, tint) {
       const b = makeBasket(tint);
@@ -5145,13 +4647,13 @@ function init() {
       ch.add(b);
       return b;
     }
-    charP = cast(protos.char_trainee, charAnims.trainee, { shirt: 0x5da244, pants: 0x707a8c, skin: 0xffd9ae, hat: 0xf0c94e, band: 0xd63a1e, brow: 0x4a3421 });
+    charP = cast(protos.char_trainee, charAnims.trainee);
     basketP = carry(charP, 0);
     scene.add(charP);
-    charR = cast(protos.char_rival, charAnims.rival, { shirt: 0x3d5a80, pants: 0x4a3b2c, skin: 0xe8b98a, hat: 0x8a6d3b, band: 0x5b4632, brow: 0xd9d9d9, beard: true, smug: true });
+    charR = cast(protos.char_rival, charAnims.rival);
     basketR = carry(charR, 0x8fb0dd);
     charR.visible = false; scene.add(charR);
-    charG = cast(protos.char_grandpa, charAnims.grandpa, { shirt: 0x4d7dc9, pants: 0x707a8c, skin: 0xffcf9e, hat: 0xf0c94e, band: 0xd63a1e, brow: 0x5b4632 });
+    charG = cast(protos.char_grandpa, charAnims.grandpa);
     carry(charG, 0);
     charG.visible = false; scene.add(charG);
   }
@@ -5339,16 +4841,51 @@ function init() {
     return p.behind ? null : p;
   };
   // v14: where the character-view camera sits, and which way the cast
-  // faces — exposed so the view can be verified, not just claimed
+  // faces — exposed so the view can be verified, not just claimed.
+  // v16: also reports the first-person state (eye height, view yaw,
+  // whether the picker's body is hidden and his basket rides the
+  // camera), so "first person" is a measurement, not a claim.
   window.__h3dCamInfo = function () {
     if (!ready) return null;
     return {
       camX: Math.round(camera.position.x), camY: Math.round(camera.position.y), camZ: Math.round(camera.position.z),
       followX: Math.round(camFollow.x), followZ: Math.round(camFollow.z),
       pYaw: charP ? Math.round(charP.rotation.y * 100) / 100 : null,
-      rYaw: charR ? Math.round(charR.rotation.y * 100) / 100 : null
+      rYaw: charR ? Math.round(charR.rotation.y * 100) / 100 : null,
+      fp: fpOn, fpYaw: Math.round(fpYaw * 100) / 100,
+      bodyHidden: fpOn, viewBasket: !!(basketP && basketP.parent === camera)
     };
   };
+  // ---- v16: first-person view state --------------------------------
+  // fpYaw is the eye's heading (same convention as faceToward: the
+  // look direction is (sin yaw, cos yaw) in xz, so PI faces into the
+  // field). It chases the walk direction slowly — a first-person
+  // camera that snaps around is what made v14/v15 feel frantic.
+  let fpYaw = Math.PI, fpYawT = Math.PI, bobPh = 0, fpOn = false;
+  // Entering play: the picker's own body leaves the frame (a real
+  // first-person view has no back to look at) and his basket is
+  // re-parented to the camera, riding low in the frame like a basket
+  // carried in both hands. Leaving play (menu scenes) restores both.
+  function enterFPView() {
+    if (fpOn || !charP || !basketP) return;
+    fpOn = true;
+    if (!basketP.userData.homePos) {
+      basketP.userData.homePos = basketP.position.clone();
+      basketP.userData.homeScale = basketP.scale.x;
+    }
+    camera.add(basketP);
+    basketP.scale.setScalar(0.6);
+    charP.traverse(function (o) { if (o.isMesh) o.visible = false; });
+  }
+  function exitFPView() {
+    if (!fpOn || !charP || !basketP) return;
+    fpOn = false;
+    charP.add(basketP);
+    if (basketP.userData.homePos) basketP.position.copy(basketP.userData.homePos);
+    basketP.scale.setScalar(basketP.userData.homeScale || 0.72);
+    basketP.rotation.set(0, 0, 0);
+    charP.traverse(function (o) { if (o.isMesh) o.visible = true; });
+  }
   // v14: the play camera's smoothed follow point (the player's ground
   // position), and the cast's turning: a character faces the way he is
   // moving — world forward is -z, into the field — and, standing
@@ -5402,7 +4939,9 @@ function init() {
       if (p.behind) return;
       const pe = projectRaw(f.x + f.r, f.h, f.z);
       const rPx = Math.abs(pe.x - p.x);
-      const thr = Math.max(30, Math.min(66, rPx + 24));
+      // v16: first person makes a near fruit loom large on screen —
+      // the tap target grows with it (the REACH rule still gates it)
+      const thr = Math.max(30, Math.min(96, rPx + 24));
       const d = Math.hypot(p.x - px, p.y - py);
       if (d < thr && d < bestFD) { bestFD = d; bestF = f; }
     });
@@ -5435,34 +4974,40 @@ function init() {
     setPlayVisible(true);
     if (charG) charG.visible = false;
 
-    // v14: character-view camera. v9–v13 rode a fixed gantry above the
-    // front rows and only slid sideways; the user asked for the
-    // character's own viewpoint instead. The camera now sits just
-    // behind the player's right shoulder, low, and looks past him into
-    // the field: his back fills the lower frame, the row he walks
-    // toward runs away from him, and the direction he advances IS the
-    // depth of the picture. It follows his ground position — x and
-    // depth alike — with a soft lag, and the sun (with its shadow box)
-    // travels with the focus so shadows stay put.
+    // v16: TRUE first person. v14/v15 put the camera behind the
+    // picker's shoulder and called it his viewpoint; the user played
+    // it and said, correctly, that it is not first person. The camera
+    // now sits at the picker's own eyes (he is 100 tall, eyes at 93):
+    // his body is not drawn at all, his basket rides low in the frame
+    // on the camera itself, and the field ahead is simply what he
+    // sees. The eye chases his ground position tightly, the heading
+    // chases his walk direction slowly (fast turns are what made the
+    // old view feel frantic and sickening), and a small walk bob —
+    // scaled by speed, gone when standing — keeps it human without
+    // shaking a still view.
     const pb = snap.basket;
     const pFeetGY = Math.min(pb.y + 40, 702);
     const pCharZ = depthZ(pFeetGY) + 104;
     if (!camFollow.on || Math.hypot(pb.x - camFollow.x, pCharZ - camFollow.z) > 720) {
       camFollow.x = pb.x; camFollow.z = pCharZ; camFollow.on = true;
+      fpYaw = Math.PI; fpYawT = Math.PI;
     }
-    // v15: frame-rate independent exponential damping — v14's
-    // dt-linear factor (dt * 4.4) changed stiffness with the frame
-    // rate, so the follow juddered exactly when the fps dropped
-    const ck = 1 - Math.exp(-dt * 5.2);
+    const ck = 1 - Math.exp(-dt * 9);
     camFollow.x += (pb.x - camFollow.x) * ck;
     camFollow.z += (pCharZ - camFollow.z) * ck;
-    // framing (tuned in verification): 285 behind and 232 up keeps the
-    // camera above the canopy of the rows it trails through — at the
-    // first tuning (338 / 178) it sat inside the front row's leaves
-    // whenever the player walked to the back row
-    camera.position.set(camFollow.x + 28, 232, camFollow.z + 285);
-    lookOffSm += (Math.max(-46, Math.min(46, (pb.vx || 0) * 0.055)) - lookOffSm) * Math.min(1, dt * 5);
-    camera.lookAt(camFollow.x + lookOffSm, 48, camFollow.z - 235);
+    const hvx = pb.vx || 0, hvz = (pb.vy || 0) * ZSCALE;
+    const hSpd = Math.hypot(hvx, hvz);
+    if (hSpd > 36) fpYawT = Math.atan2(hvx, hvz);
+    let dyaw = fpYawT - fpYaw;
+    while (dyaw > Math.PI) dyaw -= Math.PI * 2;
+    while (dyaw < -Math.PI) dyaw += Math.PI * 2;
+    fpYaw += dyaw * (1 - Math.exp(-dt * 3.1));
+    bobPh += dt * (4 + hSpd * 0.028);
+    const bobY = Math.sin(bobPh * 2) * 1.5 * Math.min(1, hSpd / 300);
+    const eyeY = 93 + bobY;
+    camera.position.set(camFollow.x, eyeY, camFollow.z);
+    if (camera.fov !== 66) { camera.fov = 66; camera.updateProjectionMatrix(); }
+    camera.lookAt(camFollow.x + Math.sin(fpYaw) * 260, eyeY - 36 + bobY * 0.5, camFollow.z + Math.cos(fpYaw) * 260);
     aimSun(camFollow.x, camFollow.z);
     if (snap.fieldKey !== propsKey) buildProps(snap);
     // the decorative backdrop rows are culled to the camera's slice too
@@ -5492,9 +5037,14 @@ function init() {
       // into the foliage (walk behind a row and its leaves still
       // overlap him naturally — depth order does the rest)
       charP.position.set(b.x, baseY, depthZ(feetGY) + 104);
-      basketP.position.y = (basketP.userData.homeY || 24) - b.sink * 6;
-      basketP.rotation.z = -b.tilt;
-      basketP.rotation.x = Math.sin(elapsed * 2.1) * 0.018 - b.sink * 0.05;
+      // v16: in first person the body is hidden and the basket rides
+      // on the camera, low in the frame — it still dips and tilts
+      // with the same sink/tilt the two-handed carry used to show
+      enterFPView();
+      if (basketP.parent === camera) {
+        basketP.position.set(6 - b.tilt * 26, -16 - b.sink * 2.4, -50);
+        basketP.rotation.set(-0.30 - b.sink * 0.05 + Math.sin(elapsed * 2.1) * 0.012, 0, -b.tilt * 1.3);
+      }
       charP.rotation.z = -b.tilt * 0.45;
       // v14: he turns to face the way he walks (idle: into the field)
       faceToward(charP, b.vx || 0, b.vy || 0, dt);
@@ -5565,11 +5115,15 @@ function init() {
         // the rows behind him, so the row he just passed stands right
         // in front of the lens and its canopy could fill the whole
         // screen (the user's v14 walkthrough video shows exactly
-        // that). A plant that close to the camera now fades out —
-        // fully gone under 170 units, back to solid by 300 — so the
-        // picker and the field ahead stay visible while he walks.
+        // that). A plant that close to the camera now fades out.
+        // v16: the camera is AT the picker now, not 285 behind him, so
+        // the fade band shrinks — gone under 45, solid by 130. The
+        // plant he is picking from head-on stands ~200 away (the
+        // REACH rule's own geometry) and stays fully solid; only a
+        // plant he has walked right into, at his own feet, dissolves
+        // before its canopy can swallow the whole frame.
         const dCam = Math.hypot(p.x - camera.position.x, pz - camera.position.z);
-        const fade = dCam >= 300 ? 1 : dCam <= 170 ? 0 : (dCam - 170) / 130;
+        const fade = dCam >= 130 ? 1 : dCam <= 45 ? 0 : (dCam - 45) / 85;
         if (fade <= 0) { g.visible = false; hiddenN++; return; }
         g.visible = true;
         const mats = plantMats.get(p.id);
@@ -5866,6 +5420,10 @@ function init() {
     }
     stageT += dt;
     ensureChars();
+    // v16: menu scenes are third person again — the picker's body
+    // comes back and his basket returns to his hands
+    exitFPView();
+    if (camera.fov !== 62) { camera.fov = 62; camera.updateProjectionMatrix(); }
     ensureStage();
     if (!charP || !stageCrate) return;
     paintSky(snap.sky);
@@ -5982,7 +5540,7 @@ function init() {
   // ================= v10: in-panel 3D farm view =================
   // A small second stage inside the farm panel: the player's four plots
   // as a real field seen from above. Tapping a plot selects it through
-  // the same hook the fallback cards use.
+  // the same hook the plot cards use.
   let farmR = null;
   window.__h3dFarmReady = function () { return ready && !!farmR; };
   function farmSecX(i) { return i % 2 === 0 ? -330 : 330; }
@@ -6253,8 +5811,10 @@ function init() {
   // now the real models' busts: one small offscreen renderer draws
   // the current speaker's head and shoulders (idle clip playing) and
   // the frame is copied into the same 96x96 canvases. If WebGL or the
-  // models are unavailable, __h3dFaceFrame stays a no-op and the 2D
-  // drawings simply remain.
+  // models are unavailable, __h3dFaceFrame stays a no-op and the
+  // canvases simply remain blank — the old 2D face drawings were
+  // deleted in the v16 cleanup, and without WebGL the game itself
+  // never starts (see the boot gate).
   let faceR = null, faceCur = null;
   const faceBusts = {};
   function initFaceView() {
@@ -6429,7 +5989,9 @@ function init() {
     ready = true;
     if (window.__onH3dReady) window.__onH3dReady();
   }).catch(function (e) {
-    console.warn('3D model load failed, staying on 2D renderer:', e);
+    console.warn('3D model load failed:', e);
+    // v16: genuine failure — the boot screen stays up as a text-only notice
+    if (window.__onH3dFailed) window.__onH3dFailed();
   });
 }
 </script>
