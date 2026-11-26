@@ -119,6 +119,22 @@
   #loadScreen .lm { margin-top:26px; color:#4a2f14; font-weight:800; background:rgba(255,248,234,.92); padding:6px 18px; border-radius:999px; }
   #loadBarWrap { width:min(70%,300px); height:12px; background:rgba(255,255,255,.55); border-radius:999px; margin-top:14px; overflow:hidden; box-shadow:inset 0 1px 3px rgba(90,60,20,.3); }
   #loadBar { height:100%; width:0%; background:linear-gradient(90deg,#f0563a,#ffc93c); border-radius:999px; transition:width .3s; }
+  /* v17: virtual stick (play only) — bottom-left, held clear of the
+     crate HUD the canvas paints into the very bottom-left corner */
+  #stick {
+    position:absolute; left:4%; bottom:17.5%; width:23%; aspect-ratio:1/1;
+    border-radius:50%; z-index:4; display:none;
+    background:rgba(255,248,234,.20); border:2px solid rgba(110,66,28,.55);
+    box-shadow:inset 0 2px 8px rgba(60,35,0,.25), 0 4px 10px rgba(60,35,0,.18);
+    touch-action:none;
+  }
+  #stickKnob {
+    position:absolute; left:50%; top:50%; width:46%; aspect-ratio:1/1;
+    border-radius:50%; transform:translate(-50%,-50%);
+    background:rgba(255,248,234,.82); border:2px solid #6e421c;
+    box-shadow:0 3px 8px rgba(60,35,0,.35);
+    pointer-events:none;
+  }
   #toast {
     position:absolute; left:50%; top:118px; transform:translate(-50%,-16px);
     background:linear-gradient(180deg,#ffe97a,#ffc93c); color:#7a5200;
@@ -248,6 +264,7 @@
     <button id="muteBtn" type="button">🔊</button>
     <button id="langBtn" type="button">EN</button>
     <div id="toast"></div>
+    <div id="stick"><div id="stickKnob"></div></div>
 
     <div class="overlay top" id="titleScreen">
       <div class="sign">
@@ -255,7 +272,7 @@
         <div class="en">HARVEST SORT PATROL</div>
       </div>
       <div class="panel">
-        <div id="howto">畑の株でトマトが育つ。<b>完熟（真っ赤）になった実</b>のそばまで歩いて、タップして収穫しよう（遠くからでは手が届かない）。完熟直後の「ベスト」収穫で高得点。畑で種を植えて育て、交配で新しい品種を作り、秋の品評会で入賞を目指そう。ベスト収穫をつなげてフィーバー！（PC: WASD・矢印キーで移動、クリックかスペースキーで収穫）</div>
+        <div id="howto">畑の株でトマトが育つ。<b>完熟（真っ赤）になった実</b>のそばまで歩いて、タップして収穫しよう（遠くからでは手が届かない）。完熟直後の「ベスト」収穫で高得点。畑で種を植えて育て、交配で新しい品種を作り、秋の品評会で入賞を目指そう。ベスト収穫をつなげてフィーバー！（左下のスティックで歩き、画面の右半分をドラッグして見回そう。PC: WASD・矢印キーで移動、マウスドラッグで見回し、クリックかスペースキーで収穫）</div>
         <div class="legend">
           <div><span class="dot ripe"></span><span id="lgRipe">熟した赤 = 取る</span></div>
           <div><span class="dot unripe"></span><span id="lgUnripe">青い = よける</span></div>
@@ -264,7 +281,7 @@
           <div><span class="dot damaged"></span><span id="lgDamaged">傷んだ = よける</span></div>
           <div><span class="dot gold"></span><span id="lgGold">金のトマト = 必ず取る</span></div>
         </div>
-        <div id="controls">ドラッグ／WASD・矢印キーで歩き回り、実のそばでタップ／クリック／スペースキーで収穫します</div>
+        <div id="controls">左下のスティックで歩き、画面の右半分をドラッグして見回し、実のそばでタップ／クリック／スペースキーで収穫します</div>
       </div>
       <div class="farmerRow">
         <canvas class="farmerCv" id="farmerTitle" width="96" height="96"></canvas>
@@ -445,7 +462,7 @@
       </div>
     </div>
   </div>
-  <div id="credit">しゅうかく見分け隊 v16 — Ap Robo Educational LLC — Kiroween 2026 / Costume Contest</div>
+  <div id="credit">しゅうかく見分け隊 v17 — Ap Robo Educational LLC — Kiroween 2026 / Costume Contest</div>
 </div>
 <script>
 "use strict";
@@ -496,10 +513,10 @@ const STR = {
   ja: {
     title: "しゅうかく見分け隊", over: "しゅうかく終了！", start: "スタート", retry: "もう一度",
     continue: "つづきから", newGame: "はじめから",
-    howto: "畑の株でトマトが育つ。画面は<b>あなたの目線（一人称）</b>。<b>完熟（真っ赤）になった実</b>のそばまで歩いて、目の前の実をタップして収穫しよう（遠くからでは手が届かない）。完熟直後の「ベスト」収穫で高得点。畑で種を植えて育て、交配で新しい品種を作り、秋の品評会で入賞を目指そう。ベスト収穫をつなげてフィーバー！（PC: WASD・矢印キーで移動、クリックかスペースキーで収穫）",
+    howto: "畑の株でトマトが育つ。画面は<b>あなたの目線（一人称）</b>。<b>完熟（真っ赤）になった実</b>のそばまで歩いて、目の前の実をタップして収穫しよう（遠くからでは手が届かない）。完熟直後の「ベスト」収穫で高得点。畑で種を植えて育て、交配で新しい品種を作り、秋の品評会で入賞を目指そう。ベスト収穫をつなげてフィーバー！（左下のスティックで歩き、画面の右半分をドラッグして見回そう。PC: WASD・矢印キーで移動、マウスドラッグで見回し、クリックかスペースキーで収穫）",
     lgRipe: "完熟 = 取る", lgUnripe: "青い = まだ待つ", lgHalf: "色づき途中 = 待つ",
     lgOver: "過熟 = 安値で出荷", lgDamaged: "傷んだ = 取らない", lgGold: "金のトマト = 必ず取る",
-    controls: "一人称の目線で、ドラッグ／WASD・矢印キーで歩き回り、目の前の実をタップ／クリック／スペースキーで収穫します",
+    controls: "一人称の目線で、左下のスティックを倒して歩き、画面の右半分をドラッグして見回します。目の前の実をタップ／クリック／スペースキーで収穫します（PCはWASD・矢印キーでも移動できます）",
     score: "スコア", best: "ベスト",
     caught: "収穫数", good: "見逃し正解", miss: "ミス",
     accuracy: "正解率", maxCombo: "最大コンボ", days: "到達日数",
@@ -609,10 +626,10 @@ const STR = {
   en: {
     title: "Harvest Sort Patrol", over: "Harvest Complete!", start: "START", retry: "Play Again",
     continue: "Continue", newGame: "New Game",
-    howto: "Tomatoes grow on the plants in your field. You see the field <b>through your own eyes (first person)</b>. Walk right up to a <b>fully ripe (deep red) fruit</b> and tap the fruit in front of you to pick it — your arms can't reach from far away. Pick right after ripening for a PERFECT bonus. Plant and raise seeds, cross varieties to breed new ones, and aim for a prize at the autumn harvest fair. Chain perfect picks for FEVER! (PC: WASD / arrow keys to walk, click or Space to pick.)",
+    howto: "Tomatoes grow on the plants in your field. You see the field <b>through your own eyes (first person)</b>. Walk right up to a <b>fully ripe (deep red) fruit</b> and tap the fruit in front of you to pick it — your arms can't reach from far away. Pick right after ripening for a PERFECT bonus. Plant and raise seeds, cross varieties to breed new ones, and aim for a prize at the autumn harvest fair. Chain perfect picks for FEVER! (Walk with the stick at the lower left, and drag the right side of the screen to look around. PC: WASD / arrow keys to walk, mouse drag to look, click or Space to pick.)",
     lgRipe: "Ripe = PICK", lgUnripe: "Green = WAIT", lgHalf: "Half-colored = WAIT",
     lgOver: "Overripe = CHEAP", lgDamaged: "Damaged = DON'T PICK", lgGold: "Golden = ALWAYS PICK",
-    controls: "First-person view: walk with drag, WASD or arrow keys; tap, click, or press Space to pick the fruit in front of you",
+    controls: "First-person view: tilt the stick at the lower left to walk, drag the right side of the screen to look around; tap, click, or press Space to pick the fruit in front of you (PC: WASD / arrow keys and mouse drag work too)",
     score: "SCORE", best: "BEST",
     caught: "Harvested", good: "Good dodges", miss: "Misses",
     accuracy: "Accuracy", maxCombo: "Max combo", days: "Days reached",
@@ -1915,6 +1932,7 @@ function startHarvest(kind) {
   daySquash = 0; dayBest = 0; dayGold = 0; dayRushPicks = 0; dayCrowStolen = 0; dayMaxCombo = 0;
   basketVX = 0; basketVY = 0; basketSpeed = 0; basketSink = 0;
   moveVX = 0; moveVY = 0; kbDrive = false;
+  stickReset(); viewDrag = null;   // v17: no stale stick / view drag rides into a new day
   // v6: day 7 is always the fair final against the rival; other days can
   // choose a rival match instead of a normal harvest.
   vsFinal = (day === SEASON_DAYS);
@@ -2977,23 +2995,41 @@ function update(dt) {
     if (vsT <= 0) { vsT = 0; endVersus(); updateParts(dt); return; }
   }
 
-  // v15: PC keyboard drive — WASD / arrow keys held down steer the
-  // picker directly. The play camera always looks into the field
-  // (away from the viewer), so the mapping is camera-relative by
-  // construction: W walks toward the back rows, S toward the viewer,
-  // A / D along the row. While a key is held, the walk target rides a
-  // short way ahead of the basket in the key direction; on release
-  // the target snaps back to the basket, so he stops instead of
-  // wandering on to the last mouse / touch point.
-  let kbX = 0, kbY = 0;
-  if (keysDown["KeyA"] || keysDown["ArrowLeft"]) kbX -= 1;
-  if (keysDown["KeyD"] || keysDown["ArrowRight"]) kbX += 1;
-  if (keysDown["KeyW"] || keysDown["ArrowUp"]) kbY -= 1;
-  if (keysDown["KeyS"] || keysDown["ArrowDown"]) kbY += 1;
-  if (kbX !== 0 || kbY !== 0) {
-    const kl = Math.hypot(kbX, kbY);
-    targetX = clamp(basketX + (kbX / kl) * 150, 46, WW - 46);
-    targetY = clamp(basketY + (kbY / kl) * 150, 196, 690);
+  // v17: view-relative drive. v15/v16 read the keys in fixed field
+  // axes (W always walked to the back rows) and the first-person
+  // heading trailed after the walk direction — so once he strafed
+  // or turned, "up" stopped meaning "where I am looking", and the
+  // user found the character hard to steer (his words:
+  // キャラクターが動かしにくい). Now every drive input — WASD /
+  // arrows and the on-screen stick alike — is read in view space
+  // (forward / strafe) and rotated into field axes through the
+  // eye's actual heading (__h3dViewYaw), so up always walks where
+  // he is looking. While input is held, the walk target rides a
+  // short way ahead in that direction — nearer for a gentle stick
+  // tilt, so the tilt steers the speed too (full tilt / a key =
+  // the full 90, which the arrive curve turns into top speed); on
+  // release the target snaps back to the basket and the v16 brake
+  // stops him instead of wandering on.
+  let inF = 0, inS = 0;
+  if (keysDown["KeyW"] || keysDown["ArrowUp"]) inF += 1;
+  if (keysDown["KeyS"] || keysDown["ArrowDown"]) inF -= 1;
+  if (keysDown["KeyD"] || keysDown["ArrowRight"]) inS += 1;
+  if (keysDown["KeyA"] || keysDown["ArrowLeft"]) inS -= 1;
+  if (stickVec.x !== 0 || stickVec.y !== 0) { inS += stickVec.x; inF -= stickVec.y; }
+  const inMag = Math.hypot(inF, inS);
+  if (inMag > 0.01) {
+    const yaw = (typeof window.__h3dViewYaw === "function" && window.__h3dViewYaw() != null)
+      ? window.__h3dViewYaw() : Math.PI;
+    const sy = Math.sin(yaw), cy = Math.cos(yaw);
+    // view space -> three space: forward is (sy, cy) and right is
+    // (-cy, sy) in xz; then z goes back into field units
+    // (z = (gy - GY_FRONT) * 1.55, so dgy = dz / 1.55)
+    const wx = sy * inF - cy * inS;
+    const wy = (cy * inF + sy * inS) / 1.55;
+    const wl = Math.hypot(wx, wy) || 1;
+    const reachT = 90 * Math.min(1, inMag);
+    targetX = clamp(basketX + (wx / wl) * reachT, 46, WW - 46);
+    targetY = clamp(basketY + (wy / wl) * reachT, 196, 690);
     kbDrive = true;
   } else if (kbDrive) {
     targetX = basketX; targetY = basketY;
@@ -3021,7 +3057,7 @@ function update(dt) {
   // point and then wobble back to it — it read as sliding. Brake hard
   // in that case only; the soft relax still shapes starts and turns.
   const braking = (desVX === 0 && desVY === 0);
-  const accK = Math.min(1, dt * (braking ? 11 : 3.4));   // v16: slower relax toward the desired velocity — soft starts, soft stops, lazy turns
+  const accK = Math.min(1, dt * (braking ? 11 : 5.5));   // v17: a quicker answer to a fresh input (v16's 3.4 lagged behind the finger / key); the hard brake on release is unchanged
   moveVX += (desVX - moveVX) * accK;
   moveVY += (desVY - moveVY) * accK;
   if (braking && Math.hypot(moveVX, moveVY) < 30) { moveVX = 0; moveVY = 0; }
@@ -3209,6 +3245,11 @@ function frame(ts) {
   // clamped dt; only the meter sees the raw one.
   window.__rawDt = lastTs ? (ts - lastTs) / 1000 : 0.016;
   lastTs = ts;
+  // v17: the stick belongs to play mode only (harvest and versus)
+  if (stickEl) {
+    const wantStick = mode === "play" ? "block" : "none";
+    if (stickEl.style.display !== wantStick) stickEl.style.display = wantStick;
+  }
   const ready3d = typeof window.__h3dReady === "function" && window.__h3dReady();
   const use3d = mode === "play" && ready3d;
   // v10: title / story / result / ending screens get their own 3D scenes
@@ -3385,9 +3426,11 @@ function drawIndicators() {
 }
 
 // ---------- input ----------
-// Drag (or mouse) moves the basket anywhere in the field. A tap picks only
-// when it lands on a fruit, shooes a pest, or scares a crow — so moving and
-// picking never fight over the same finger.
+// v17: three separate jobs, three separate inputs — the stick walks
+// (view-relative, see update()), a drag on the field turns the view,
+// and a tap picks only when it lands on a fruit, shooes a pest, or
+// scares a crow. Walking, looking and picking never fight over the
+// same finger any more.
 function pointerPos(clientX, clientY) {
   const rect = cv.getBoundingClientRect();
   return {
@@ -3396,6 +3439,56 @@ function pointerPos(clientX, clientY) {
   };
 }
 let pointerDown = false;
+
+// ---------- v17: virtual stick ----------
+// Shown only in play (frame() syncs its display). The stick is its
+// own element, so one thumb can walk on it while another finger
+// drags the view or taps a fruit on the canvas — no pointer ever
+// has two jobs. stickVec is analogue: x = strafe right, y = down
+// (forward is -y), each in -1..1 with a small dead zone; update()
+// reads it together with the keys.
+const stickEl = document.getElementById("stick");
+const stickKnob = document.getElementById("stickKnob");
+const stickVec = { x: 0, y: 0 };
+let stickPointer = null;
+function stickSetKnob(dx, dy) {
+  stickKnob.style.transform = "translate(-50%,-50%) translate(" + dx + "px," + dy + "px)";
+}
+function stickReset() {
+  stickPointer = null;
+  stickVec.x = 0; stickVec.y = 0;
+  stickSetKnob(0, 0);
+}
+function stickFromEvent(e) {
+  const r = stickEl.getBoundingClientRect();
+  const rad = Math.max(1, r.width / 2);
+  let dx = e.clientX - (r.left + rad), dy = e.clientY - (r.top + rad);
+  const d = Math.hypot(dx, dy);
+  if (d > rad) { dx = dx / d * rad; dy = dy / d * rad; }
+  stickSetKnob(dx, dy);
+  let vx = dx / rad, vy = dy / rad;
+  if (Math.hypot(vx, vy) < 0.12) { vx = 0; vy = 0; }
+  stickVec.x = vx; stickVec.y = vy;
+}
+stickEl.addEventListener("pointerdown", function (e) {
+  if (mode !== "play") return;
+  stickPointer = e.pointerId;
+  try { stickEl.setPointerCapture(e.pointerId); } catch (err) {}
+  stickFromEvent(e);
+  e.preventDefault();
+});
+stickEl.addEventListener("pointermove", function (e) {
+  if (e.pointerId !== stickPointer) return;
+  stickFromEvent(e);
+});
+["pointerup", "pointercancel"].forEach(function (t) {
+  stickEl.addEventListener(t, function (e) {
+    if (e.pointerId !== stickPointer) return;
+    stickReset();
+  });
+});
+window.__stickVec = function () { return { x: stickVec.x, y: stickVec.y, active: stickPointer != null }; };
+
 function handleTap(x, y) {
   if (crow && crow.state !== "leave" && Math.hypot(x - crow.x, y - crow.y) < 52) { scareCrow(); return true; }
   for (let i = 0; i < bugs.length; i++) {
@@ -3419,16 +3512,17 @@ function handleTap(x, y) {
   return false;
 }
 // v13: a tap is resolved in 3D — the fruit (or pest, or crow)
-// actually drawn under the finger is picked, wherever its row is,
-// and a ground tap walks the player to that very spot on the ground
-// plane (front rows and back rows alike).
+// actually drawn under the finger is picked, wherever its row is.
+// (v17: a press that hits nothing starts a VIEW drag instead of
+// walking the player to that spot on the ground plane — walking
+// is the stick's / the keys' job now.)
 function h3dInput() {
   return typeof window.__h3dReady === "function" && window.__h3dReady() && typeof window.__h3dPickAt === "function";
 }
-function applyGroundTarget(g, touch) {
-  targetX = clamp(g.x, 46, WW - 46);
-  targetY = clamp(g.gy - 40 + (touch ? 18 : 0), 196, 690);
-}
+// v17: while a view drag is live, this holds its pointer id and the
+// last client x seen — movement of THAT pointer (and no other)
+// turns the first-person view.
+let viewDrag = null;
 cv.addEventListener("pointerdown", function (e) {
   pointerDown = true;
   if (mode !== "play") return;
@@ -3450,7 +3544,16 @@ cv.addEventListener("pointerdown", function (e) {
         }
       } else if (pick.hit === "crow") {
         if (crow && crow.state !== "leave") { scareCrow(); return; }
-      } else if (pick.hit === "ground") { applyGroundTarget(pick, e.pointerType === "touch"); return; }
+      }
+      // ground (or a hit that resolved to nothing): fall through —
+      // the press becomes a view drag, so a tap on empty ground
+      // just looks around and never walks him anywhere.
+    }
+    if (!viewDrag) {
+      viewDrag = { id: e.pointerId, lastX: e.clientX };
+      // keep the drag's moves coming even if the pointer slides off
+      // the canvas edge mid-turn (a mouse user dragging wide)
+      try { cv.setPointerCapture(e.pointerId); } catch (err) {}
     }
     return;
   }
@@ -3461,18 +3564,32 @@ cv.addEventListener("pointerdown", function (e) {
 });
 cv.addEventListener("pointermove", function (e) {
   if (mode !== "play") return;
-  if (e.pointerType !== "mouse" && !pointerDown) return;
-  const p = pointerPos(e.clientX, e.clientY);
-  if (h3dInput()) {
-    const g = typeof window.__h3dGroundAt === "function" ? window.__h3dGroundAt(p.x, p.y) : null;
-    if (g) applyGroundTarget(g, e.pointerType === "touch");
+  if (viewDrag && e.pointerId === viewDrag.id) {
+    const dx = e.clientX - viewDrag.lastX;
+    viewDrag.lastX = e.clientX;
+    if (dx !== 0 && typeof window.__h3dTurnView === "function") {
+      const rect = cv.getBoundingClientRect();
+      // about 2.8 rad of turn across one full stage width of drag;
+      // dragging right turns the view right (the yaw falls — see
+      // the heading convention in the 3D layer)
+      window.__h3dTurnView(-dx * (2.8 / Math.max(1, rect.width)));
+    }
     return;
   }
+  if (h3dInput()) return;   // v17: no hover steering, no drag-to-walk
+  if (e.pointerType !== "mouse" && !pointerDown) return;
+  const p = pointerPos(e.clientX, e.clientY);
   targetX = p.x + camX;
   targetY = p.y - (e.pointerType === "touch" ? 26 : 0);
 });
-window.addEventListener("pointerup", function () { pointerDown = false; });
-window.addEventListener("pointercancel", function () { pointerDown = false; });
+window.addEventListener("pointerup", function (e) {
+  pointerDown = false;
+  if (viewDrag && e && e.pointerId === viewDrag.id) viewDrag = null;
+});
+window.addEventListener("pointercancel", function (e) {
+  pointerDown = false;
+  if (viewDrag && e && e.pointerId === viewDrag.id) viewDrag = null;
+});
 // v15: PC keyboard controls. Keys are tracked by e.code, so WASD
 // works on any keyboard layout; the arrow keys work too. Movement is
 // applied in update() (camera-relative); Space / E picks the nearest
@@ -4859,9 +4976,22 @@ function init() {
   // ---- v16: first-person view state --------------------------------
   // fpYaw is the eye's heading (same convention as faceToward: the
   // look direction is (sin yaw, cos yaw) in xz, so PI faces into the
-  // field). It chases the walk direction slowly — a first-person
-  // camera that snaps around is what made v14/v15 feel frantic.
+  // field). v16 made it chase the walk direction slowly; v17 hands
+  // the heading to the player instead (see __h3dTurnView below) —
+  // the chase swung the view around on every strafe, which is what
+  // "the character won't go where I point him" actually was.
   let fpYaw = Math.PI, fpYawT = Math.PI, bobPh = 0, fpOn = false;
+  // v17: the heading is the player's. The game script reads it to
+  // make every drive input view-relative, and turns it when a drag
+  // crosses the field. A manual turn moves the target AND the
+  // current heading by the same amount, so the view answers the
+  // finger at once instead of easing after it.
+  window.__h3dViewYaw = function () { return ready ? fpYaw : null; };
+  window.__h3dTurnView = function (dyaw) {
+    if (!ready) return;
+    fpYaw += dyaw;
+    fpYawT += dyaw;
+  };
   // Entering play: the picker's own body leaves the frame (a real
   // first-person view has no back to look at) and his basket is
   // re-parented to the camera, riding low in the frame like a basket
@@ -4869,6 +4999,7 @@ function init() {
   function enterFPView() {
     if (fpOn || !charP || !basketP) return;
     fpOn = true;
+    fpYaw = Math.PI; fpYawT = Math.PI;   // v17: every harvest starts facing into the field
     if (!basketP.userData.homePos) {
       basketP.userData.homePos = basketP.position.clone();
       basketP.userData.homeScale = basketP.scale.x;
@@ -4980,9 +5111,9 @@ function init() {
     // now sits at the picker's own eyes (he is 100 tall, eyes at 93):
     // his body is not drawn at all, his basket rides low in the frame
     // on the camera itself, and the field ahead is simply what he
-    // sees. The eye chases his ground position tightly, the heading
-    // chases his walk direction slowly (fast turns are what made the
-    // old view feel frantic and sickening), and a small walk bob —
+    // sees. The eye chases his ground position tightly; the heading
+    // at first chased his walk direction slowly (v17 hands it to the
+    // player's drag instead — see __h3dTurnView), and a small walk bob —
     // scaled by speed, gone when standing — keeps it human without
     // shaking a still view.
     const pb = snap.basket;
@@ -4997,11 +5128,17 @@ function init() {
     camFollow.z += (pCharZ - camFollow.z) * ck;
     const hvx = pb.vx || 0, hvz = (pb.vy || 0) * ZSCALE;
     const hSpd = Math.hypot(hvx, hvz);
-    if (hSpd > 36) fpYawT = Math.atan2(hvx, hvz);
+    // v17: the heading no longer chases the walk direction (the
+    // v16 line `if (hSpd > 36) fpYawT = atan2(hvx, hvz)` is gone).
+    // The player owns the heading now — drag to turn, and movement
+    // is read in view space, so strafing no longer swings the view.
+    // This easing only settles the small residue a reset can leave
+    // between target and current heading, and it runs far faster
+    // than v16's lazy 3.1, so even that answers at once.
     let dyaw = fpYawT - fpYaw;
     while (dyaw > Math.PI) dyaw -= Math.PI * 2;
     while (dyaw < -Math.PI) dyaw += Math.PI * 2;
-    fpYaw += dyaw * (1 - Math.exp(-dt * 3.1));
+    fpYaw += dyaw * (1 - Math.exp(-dt * 10));
     bobPh += dt * (4 + hSpd * 0.028);
     const bobY = Math.sin(bobPh * 2) * 1.5 * Math.min(1, hSpd / 300);
     const eyeY = 93 + bobY;
