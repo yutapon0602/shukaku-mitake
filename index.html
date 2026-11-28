@@ -483,7 +483,7 @@
       </div>
     </div>
   </div>
-  <div id="credit">しゅうかく見分け隊 v20 — Ap Robo Educational LLC — Kiroween 2026 / Costume Contest</div>
+  <div id="credit">しゅうかく見分け隊 v21 — Ap Robo Educational LLC — Kiroween 2026 / Costume Contest</div>
 </div>
 <script>
 "use strict";
@@ -3040,6 +3040,15 @@ function update(dt) {
   elapsed += dt;
   windVal = Math.sin(elapsed * 0.55 + absDay() * 1.7) * windMaxFor();
 
+  // v21: hold-to-pick — while the button / key stays down, the auto
+  // target is picked again every HOLD_PICK_EVERY seconds (walking
+  // is fine; the target is re-chosen each time). Auto picks only:
+  // a held press never wanders onto an unripe fruit or the crow.
+  if (harvestHeld()) {
+    holdPickT -= dt;
+    if (holdPickT <= 0) { autoHarvestPick(); holdPickT = HOLD_PICK_EVERY; }
+  } else holdPickT = HOLD_PICK_EVERY;
+
   // rain: weather-driven. Rainy days rain all day; cloudy days may get a shower.
   if (weatherToday === "cloudy" && absDay() >= 3) {
     if (rainWarnT > 0) {
@@ -3377,6 +3386,7 @@ function frame(ts) {
   }
   if (mode === "play" || mode === "dayclear" || mode === "over" || mode === "ending") drawHUD();
   if (mode === "play") drawIndicators();
+  if (mode === "play") drawTargetMark();   // v21: the auto target's ring
   drawFeedback();
   drawRivalBubble();
   drawFeverAndBanner(ts);
@@ -3637,10 +3647,12 @@ function resolveH3dPick(pick) {
 const finePointer = !!(window.matchMedia && window.matchMedia("(pointer: fine)").matches);
 const MOUSE_SENS = 0.0023;   // rad per pixel of mouse travel
 let ptrLocked = false;
+let mouseHold = false;   // v21: primary button held while locked (hold-to-pick)
 const crosshairEl = document.getElementById("crosshair");
 const lockHintEl = document.getElementById("lockHint");
 document.addEventListener("pointerlockchange", function () {
   ptrLocked = document.pointerLockElement === cv;
+  if (!ptrLocked) mouseHold = false;   // v21: losing the lock ends any hold
 });
 document.addEventListener("pointerlockerror", function () { ptrLocked = false; });
 document.addEventListener("mousemove", function (e) {
@@ -3662,25 +3674,37 @@ function requestMouseLock() {
     return true;
   } catch (err) { return false; }
 }
-// While locked, a shot goes where the eye looks: the fruit nearest
-// the screen-centre ray, judged by the very same REACH rule as a
-// tap (pickFruit wobbles it and says so when the arm is short).
-// Nothing under the crosshair is a whiff, not a mistake.
+// While locked, a shot goes where the eye looks — v21: the eye no
+// longer has to be pixel-perfect. A crow or a sitting pest right
+// under the crosshair still takes the press first (that aim WAS
+// deliberate); otherwise the auto target (see the v21 block below
+// harvestKeyPick) takes the pickable fruit nearest the look
+// direction inside the forward cone, and the eye swings onto it.
+// Only when no pickable fruit is in the cone does the press fall
+// back to the exact crosshair fruit — so a fruit he deliberately
+// squares up to, ripe or not, is still picked (and still judged).
 function crosshairPick() {
   if (!h3dInput()) return;
-  resolveH3dPick(window.__h3dPickAt(W / 2, H / 2));
+  const pick = window.__h3dPickAt(W / 2, H / 2);
+  if (pick && (pick.hit === "crow" || pick.hit === "bug")) { resolveH3dPick(pick); return; }
+  if (autoHarvestPick()) return;
+  resolveH3dPick(pick);
 }
 window.__ptrLock = function () { return { locked: ptrLocked, fine: finePointer }; };
 cv.addEventListener("pointerdown", function (e) {
   pointerDown = true;
   if (mode !== "play") return;
   // v20: while locked, the click fires at the crosshair — the real
-  // cursor is hidden and its frozen coordinates mean nothing
-  if (ptrLocked) { crosshairPick(); return; }
+  // cursor is hidden and its frozen coordinates mean nothing.
+  // v21: the press also arms the hold-to-pick repeat (update()).
+  if (ptrLocked) { mouseHold = true; crosshairPick(); return; }
   const p = pointerPos(e.clientX, e.clientY);
   if (h3dInput()) {
     const pick = window.__h3dPickAt(p.x, p.y);
     if (resolveH3dPick(pick)) return;
+    // v21: a near miss still picks — snap to the closest pickable
+    // fruit within 120 px of the tap (arm's reach still gates it)
+    if (snapTapPick(p.x, p.y)) return;
     // ground (or a hit that resolved to nothing): a mouse press
     // here takes the pointer lock (v20) instead of starting a
     // drag; where lock is unavailable the v17 view drag remains,
@@ -3722,10 +3746,12 @@ cv.addEventListener("pointermove", function (e) {
 });
 window.addEventListener("pointerup", function (e) {
   pointerDown = false;
+  if (e && e.pointerType === "mouse") mouseHold = false;   // v21
   if (viewDrag && e && e.pointerId === viewDrag.id) viewDrag = null;
 });
 window.addEventListener("pointercancel", function (e) {
   pointerDown = false;
+  if (e && e.pointerType === "mouse") mouseHold = false;   // v21
   if (viewDrag && e && e.pointerId === viewDrag.id) viewDrag = null;
 });
 // v15: PC keyboard controls. Keys are tracked by e.code, so WASD
@@ -3740,13 +3766,16 @@ window.addEventListener("keydown", function (e) {
   if (mode !== "play") return;
   if (e.code === "ArrowLeft" || e.code === "ArrowRight" || e.code === "ArrowUp" || e.code === "ArrowDown" || e.code === "Space") e.preventDefault();
   if (!e.repeat && (e.code === "Space" || e.code === "KeyE")) {
-    // v20: locked, Space / E fire at the crosshair like a click;
-    // unlocked they keep the v15 nearest-ripe-in-reach behaviour
-    if (ptrLocked) crosshairPick(); else harvestKeyPick();
+    // v20: locked, Space / E fire at the crosshair like a click.
+    // v21: unlocked, they take the auto target first and keep the
+    // v15 nearest-ripe-in-reach behaviour as the fallback. Holding
+    // the key down repeats the pick (see update()).
+    if (ptrLocked) crosshairPick();
+    else if (!autoHarvestPick()) harvestKeyPick();
   }
 });
 window.addEventListener("keyup", function (e) { keysDown[e.code] = false; });
-window.addEventListener("blur", function () { for (const k in keysDown) keysDown[k] = false; });
+window.addEventListener("blur", function () { for (const k in keysDown) keysDown[k] = false; mouseHold = false; });
 // Space / E: pick the nearest ripe (or golden) fruit the picker can
 // already reach — the same REACH rule as a tap. Nothing in reach is
 // a whiff, not a mistake: no penalty, exactly like tapping thin air.
@@ -3759,6 +3788,111 @@ function harvestKeyPick() {
     if (d <= REACH && d < bestD) { bestD = d; bestF = f; }
   });
   if (bestF) pickFruit(bestF, "you");
+}
+
+// ---------- v21: the eye does the aiming -------------------------
+// The user, playing v20, was still irritated (「実に方向転換とか
+// 収穫する時の操作性にイライラする」): the crosshair had to sit
+// exactly on a small fruit, and every pick first meant squaring up
+// to face it. v21 stops asking for aim precision:
+//  * the harvest key / locked click auto-selects a target — the
+//    pickable fruit nearest the LOOK direction inside a ±55°
+//    forward cone and inside arm's reach (REACH, unchanged);
+//  * on a pick, the eye itself swings onto that fruit (0.13 s), so
+//    turning to face each fruit is the game's job, not his;
+//  * holding the button / key repeats the pick every 0.25 s;
+//  * the current target wears a ring, so "what goes next" is
+//    visible before he presses anything;
+//  * a tap that lands near (not on) a pickable fruit snaps to it.
+// The pool is the fruit that actually SCORES — ripe, overripe,
+// gold. Half-colored fruit is NOT in the pool on purpose: picking
+// one is a miss by the standing rules, and an auto-picker that
+// deals out misses would be worse than the aim it replaces. The
+// judgement itself is untouched: square up to an unripe or half
+// fruit and tap it / centre it, and it is picked and missed,
+// exactly as before (see crosshairPick's fallback).
+const AUTO_CONE = 0.96;        // ±55° in radians
+const HOLD_PICK_EVERY = 0.25;  // seconds between hold repeats
+const TAP_SNAP_PX = 120;       // tap snap radius, screen px
+function autoPoolStage(st) { return st === "ripe" || st === "overripe" || st === "gold"; }
+function currentAutoTarget() {
+  if (mode !== "play" || typeof window.__h3dFruitDirs !== "function") return null;
+  const dirs = window.__h3dFruitDirs();
+  if (!dirs) return null;
+  const byId = {};
+  dirs.forEach(function (d) { byId[d.id] = d; });
+  let bestF = null, bestA = 1e9, bestR = 1e9;
+  fruits.forEach(function (f) {
+    if (!autoPoolStage(fruitStage(f))) return;
+    const d = byId[f.id];
+    if (!d) return;
+    const a = Math.abs(d.angH);
+    if (a > AUTO_CONE) return;
+    const r = fruitReach(f, basketX, basketY);
+    if (r > REACH) return;
+    if (a < bestA - 1e-9 || (Math.abs(a - bestA) <= 1e-9 && r < bestR)) { bestF = f; bestA = a; bestR = r; }
+  });
+  return bestF;
+}
+window.__autoTarget = function () {
+  const f = currentAutoTarget();
+  return f ? { id: f.id, stage: fruitStage(f) } : null;
+};
+function faceFruit(f) {
+  if (f && typeof window.__h3dFaceFruit === "function") window.__h3dFaceFruit(f.id);
+}
+// One auto pick: swing the eye onto the target and take it.
+function autoHarvestPick() {
+  const f = currentAutoTarget();
+  if (!f) return false;
+  faceFruit(f);
+  return pickFruit(f, "you");
+}
+// Tap snap (v21 point 5): the tap missed every drawn fruit, so the
+// nearest pickable one within TAP_SNAP_PX of the tap point — and
+// within arm's reach — takes the press instead.
+function snapTapPick(px, py) {
+  if (typeof window.__h3dNearestFruitAt !== "function") return false;
+  const ids = [];
+  fruits.forEach(function (f) {
+    if (autoPoolStage(fruitStage(f)) && fruitReach(f, basketX, basketY) <= REACH) ids.push(f.id);
+  });
+  if (!ids.length) return false;
+  const hit = window.__h3dNearestFruitAt(px, py, TAP_SNAP_PX, ids);
+  if (!hit) return false;
+  const f = fruits.find(function (fr) { return fr.id === hit.id; });
+  if (!f) return false;
+  faceFruit(f);
+  return pickFruit(f, "you");
+}
+// Hold-to-pick state: update() ticks this while the mouse button
+// (locked) or Space / E stays down.
+let holdPickT = HOLD_PICK_EVERY;
+function harvestHeld() {
+  return (mouseHold && ptrLocked) || !!keysDown["Space"] || !!keysDown["KeyE"];
+}
+window.__holdState = function () { return { held: harvestHeld(), mouseHold: mouseHold, nextIn: Math.round(holdPickT * 1000) / 1000 }; };
+// The target's ring: drawn on the 2D overlay at the fruit's real
+// projected position, gently pulsing — gold for the fruit that
+// goes next, gone when nothing is in the cone / reach.
+function drawTargetMark() {
+  if (mode !== "play" || typeof window.__h3dProject !== "function") return;
+  const f = currentAutoTarget();
+  if (!f) return;
+  const pr = window.__h3dProject(f.x, f.plant.y, f.plant.y - f.y);
+  if (!pr) return;
+  const pr2 = window.__h3dProject(f.x + f.r, f.plant.y, f.plant.y - f.y);
+  const rPx = pr2 ? Math.abs(pr2.x - pr.x) : f.r;
+  const t = performance.now() / 1000;
+  const rr = rPx + 9 + Math.sin(t * 6) * 2.5;
+  ctx.save();
+  ctx.strokeStyle = "rgba(255,217,77,0.95)";
+  ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.arc(pr.x, pr.y, rr, 0, 7); ctx.stroke();
+  ctx.strokeStyle = "rgba(255,255,255,0.8)";
+  ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.arc(pr.x, pr.y, rr + 4.5, 0, 7); ctx.stroke();
+  ctx.restore();
 }
 
 // ---------- UI: title ----------
@@ -5125,6 +5259,14 @@ function init() {
   // "the character won't go where I point him" actually was.
   let fpYaw = Math.PI, fpYawT = Math.PI, bobPh = 0, fpOn = false;
   let fpPitch = 0;   // v20: mouse-look pitch (rad; + looks up), clamped in __h3dLook
+  // v21: an auto-face tween (see __h3dFaceFruit) — for a fraction of
+  // a second the eye itself swings onto the fruit the picker is
+  // about to take, so harvesting never asks him to square up to a
+  // fruit by hand first. Mouse / drag input during the swing shifts
+  // BOTH ends of the tween (see __h3dLook / __h3dTurnView), so the
+  // player's own turning adds on instead of fighting the animation.
+  let faceTween = null;
+  function clampPitch(p) { return Math.max(-0.5, Math.min(0.45, p)); }
   // v17: the heading is the player's. The game script reads it to
   // make every drive input view-relative, and turns it when a drag
   // crosses the field. A manual turn moves the target AND the
@@ -5135,6 +5277,7 @@ function init() {
     if (!ready) return;
     fpYaw += dyaw;
     fpYawT += dyaw;
+    if (faceTween) { faceTween.fromYaw += dyaw; faceTween.toYaw += dyaw; }
   };
   // v20: pointer-lock mouse look. Yaw moves heading and target
   // together (the __h3dTurnView way), so the view answers the
@@ -5146,9 +5289,95 @@ function init() {
     if (!ready) return;
     fpYaw += dyaw;
     fpYawT += dyaw;
-    fpPitch = Math.max(-0.5, Math.min(0.45, fpPitch + (dpitch || 0)));
+    fpPitch = clampPitch(fpPitch + (dpitch || 0));
+    if (faceTween) {
+      faceTween.fromYaw += dyaw; faceTween.toYaw += dyaw;
+      faceTween.fromPitch = clampPitch(faceTween.fromPitch + (dpitch || 0));
+      faceTween.toPitch = clampPitch(faceTween.toPitch + (dpitch || 0));
+    }
   };
   window.__h3dViewPitch = function () { return ready ? fpPitch : null; };
+  // ---- v21: fruit directions + auto-face --------------------------
+  // The angle of the eye's actual look line for a given pitch: the
+  // lookAt target rides 260 ahead and 36 down at level pitch, so the
+  // line itself tilts a little below the pitch value.
+  function viewPitchAngle(p) { return Math.atan2(260 * Math.sin(p) - 36, 260 * Math.cos(p)); }
+  function solvePitch(targetAng) {
+    let lo = -0.5, hi = 0.45;
+    if (targetAng <= viewPitchAngle(lo)) return lo;
+    if (targetAng >= viewPitchAngle(hi)) return hi;
+    for (let i = 0; i < 24; i++) {
+      const mid = (lo + hi) / 2;
+      if (viewPitchAngle(mid) < targetAng) lo = mid; else hi = mid;
+    }
+    return (lo + hi) / 2;
+  }
+  // Where every drawn fruit sits relative to the eye: angH is the
+  // signed horizontal angle from the view heading (rad, + = fruit to
+  // the right of where he looks), angV the vertical angle from the
+  // look line, dist the ground distance from the camera. Computed
+  // from pickReg — the same world positions the meshes use — so the
+  // game script's auto-target can never drift from the picture.
+  window.__h3dFruitDirs = function () {
+    if (!ready) return null;
+    const cx = camera.position.x, cy = camera.position.y, cz = camera.position.z;
+    const vpa = viewPitchAngle(fpPitch);
+    return pickReg.fruits.map(function (f) {
+      const dx = f.x - cx, dz = f.z - cz, dy = f.h - cy;
+      let angH = Math.atan2(dx, dz) - fpYaw;
+      while (angH > Math.PI) angH -= Math.PI * 2;
+      while (angH < -Math.PI) angH += Math.PI * 2;
+      const hd = Math.hypot(dx, dz);
+      return {
+        id: f.id, angH: Math.round(angH * 1000) / 1000,
+        angV: Math.round((Math.atan2(dy, Math.max(1, hd)) - vpa) * 1000) / 1000,
+        dist: Math.round(hd)
+      };
+    });
+  };
+  // Swing the eye onto a fruit over dur seconds (default 0.13):
+  // yaw straight at it, pitch solved so the fruit lands on the
+  // look line — i.e. the screen centre the crosshair rides on.
+  // The frame loop advances the tween; a fresh call replaces it.
+  window.__h3dFaceFruit = function (id, dur) {
+    if (!ready) return false;
+    const f = pickReg.fruits.find(function (fr) { return fr.id === id; });
+    if (!f) return false;
+    const dx = f.x - camera.position.x, dz = f.z - camera.position.z;
+    const hd = Math.hypot(dx, dz);
+    if (hd < 1) return false;
+    let toYaw = Math.atan2(dx, dz);
+    while (toYaw - fpYaw > Math.PI) toYaw -= Math.PI * 2;
+    while (toYaw - fpYaw < -Math.PI) toYaw += Math.PI * 2;
+    faceTween = {
+      t: 0, dur: dur || 0.13, fromYaw: fpYaw, toYaw: toYaw,
+      fromPitch: fpPitch, toPitch: solvePitch(Math.atan2(f.h - camera.position.y, hd))
+    };
+    return true;
+  };
+  window.__h3dFaceState = function () {
+    if (!ready) return null;
+    if (!faceTween) return { active: false };
+    return {
+      active: true, t: Math.round(faceTween.t * 1000) / 1000, dur: faceTween.dur,
+      toYaw: Math.round(faceTween.toYaw * 1000) / 1000, toPitch: Math.round(faceTween.toPitch * 1000) / 1000
+    };
+  };
+  // The drawn fruit nearest a screen point (optionally only among
+  // the given ids) — the tap-snap's eyes. maxD is in screen px.
+  window.__h3dNearestFruitAt = function (px, py, maxD, ids) {
+    if (!ready) return null;
+    const allow = ids ? new Set(ids) : null;
+    let best = null, bestD = maxD;
+    pickReg.fruits.forEach(function (f) {
+      if (allow && !allow.has(f.id)) return;
+      const p = projectRaw(f.x, f.h, f.z);
+      if (p.behind) return;
+      const d = Math.hypot(p.x - px, p.y - py);
+      if (d < bestD) { bestD = d; best = { id: f.id, d: Math.round(d) }; }
+    });
+    return best;
+  };
   // Entering play: the picker's own body leaves the frame (a real
   // first-person view has no back to look at) and his basket is
   // re-parented to the camera, riding low in the frame like a basket
@@ -5157,6 +5386,7 @@ function init() {
     if (fpOn || !charP || !basketP) return;
     fpOn = true;
     fpYaw = Math.PI; fpYawT = Math.PI; fpPitch = 0;   // v17: every harvest starts facing into the field (v20: level pitch too)
+    faceTween = null;   // v21: a fresh scene never inherits a swing
     if (!basketP.userData.homePos) {
       basketP.userData.homePos = basketP.position.clone();
       basketP.userData.homeScale = basketP.scale.x;
@@ -5279,6 +5509,7 @@ function init() {
     if (!camFollow.on || Math.hypot(pb.x - camFollow.x, pCharZ - camFollow.z) > 720) {
       camFollow.x = pb.x; camFollow.z = pCharZ; camFollow.on = true;
       fpYaw = Math.PI; fpYawT = Math.PI; fpPitch = 0;
+      faceTween = null;   // v21: a teleport reset kills any swing
     }
     const ck = 1 - Math.exp(-dt * 9);
     camFollow.x += (pb.x - camFollow.x) * ck;
@@ -5296,6 +5527,18 @@ function init() {
     while (dyaw > Math.PI) dyaw -= Math.PI * 2;
     while (dyaw < -Math.PI) dyaw += Math.PI * 2;
     fpYaw += dyaw * (1 - Math.exp(-dt * 10));
+    // v21: advance an auto-face swing — it writes heading AND
+    // target together (the __h3dLook way), so when it lands there
+    // is no easing residue left to drift, and the mouse is back in
+    // sole charge from the very next frame.
+    if (faceTween) {
+      faceTween.t += dt;
+      const k = Math.min(1, faceTween.t / faceTween.dur);
+      const e = 1 - Math.pow(1 - k, 3);
+      fpYaw = fpYawT = faceTween.fromYaw + (faceTween.toYaw - faceTween.fromYaw) * e;
+      fpPitch = faceTween.fromPitch + (faceTween.toPitch - faceTween.fromPitch) * e;
+      if (k >= 1) faceTween = null;
+    }
     bobPh += dt * (4 + hSpd * 0.028);
     const bobY = Math.sin(bobPh * 2) * 1.5 * Math.min(1, hSpd / 300);
     const eyeY = 93 + bobY;
