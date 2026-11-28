@@ -462,7 +462,7 @@
       </div>
     </div>
   </div>
-  <div id="credit">しゅうかく見分け隊 v18 — Ap Robo Educational LLC — Kiroween 2026 / Costume Contest</div>
+  <div id="credit">しゅうかく見分け隊 v19 — Ap Robo Educational LLC — Kiroween 2026 / Costume Contest</div>
 </div>
 <script>
 "use strict";
@@ -896,6 +896,8 @@ let mode = "title"; // title | story | farm | play | dayclear | over | ending
 let score = 0, combo = 0, maxCombo = 0, misses = 0;
 let caught = 0, dodged = 0;
 let season = 1, day = 1, dayCaught = 0, dayDodged = 0, dayMiss = 0;
+let heartLoss = 0;          // v19: misses that actually cost a heart (the run ends at 3)
+let freeMissUsed = false;   // v19: the day's first miss costs no heart
 let seasonCaught = 0, seasonDodged = 0, seasonMiss = 0, seasonMaxCombo = 0;
 let goldCaught = 0, bugsHit = 0;
 let weatherToday = "sunny", weatherTomorrow = "sunny";
@@ -956,7 +958,10 @@ function absDay() { return (season - 1) * SEASON_DAYS + day; }
 function absToSeasonDay(a) { return { s: Math.floor((a - 1) / SEASON_DAYS) + 1, d: ((a - 1) % SEASON_DAYS) + 1 }; }
 
 // ---------- day / difficulty ----------
-function dayQuota() { return Math.max(3, Math.ceil((5 + (absDay() - 1) * 2) * DIFFS[diff].quota)); }
+// v19: the quota curve starts one notch lower (base 4 instead of 5),
+// so the opening days ask for one less fruit; the +2/day climb and the
+// difficulty multipliers are unchanged.
+function dayQuota() { return Math.max(3, Math.ceil((4 + (absDay() - 1) * 2) * DIFFS[diff].quota)); }
 function windMaxFor() { const a = absDay(); return a >= 3 ? Math.min(86, 30 + (a - 3) * 16) : 0; }
 
 // ---------- weather ----------
@@ -972,7 +977,7 @@ function rainingNow() { return rainT > 0 || (weatherToday === "rain" && mode ===
 function snapshotRun() {
   farm.run = {
     season: season, day: day, score: score,
-    caught: caught, dodged: dodged, misses: misses, maxCombo: maxCombo,
+    caught: caught, dodged: dodged, misses: misses, heartLoss: heartLoss, maxCombo: maxCombo,
     seasonCaught: seasonCaught, seasonDodged: seasonDodged, seasonMiss: seasonMiss, seasonMaxCombo: seasonMaxCombo,
     goldCaught: goldCaught, bugsHit: bugsHit,
     weatherToday: weatherToday, weatherTomorrow: weatherTomorrow,
@@ -992,6 +997,8 @@ function restoreRun() {
   farmDayGranted = r.farmDayGranted || 0;
   combo = 0;
   dayCaught = 0; dayDodged = 0; dayMiss = 0;
+  freeMissUsed = false;   // v19: a resumed day also starts with its free miss unused
+  heartLoss = (typeof r.heartLoss === "number") ? r.heartLoss : r.misses;
   return true;
 }
 function clearRun() { farm.run = null; saveFarm(); }
@@ -1516,17 +1523,26 @@ function overnight() {
 // ---------- game flow ----------
 function miss(kind) {
   misses++; dayMiss++; seasonMiss++; combo = 0; shake = 9;
+  // v19: the day's first miss is a freebie — it is recorded exactly
+  // like any other miss (dayMiss / seasonMiss / the rank all count
+  // it), but it does not cost a heart. Only heart-costing misses
+  // (heartLoss) can end the run, so a day now ends on its 4th miss.
+  const freeMiss = !freeMissUsed;
+  if (freeMiss) freeMissUsed = true; else heartLoss++;
+  const sayM = function (txt, col) {
+    say(freeMiss ? txt + (lang === "ja" ? "（おまけ！ ハートはへらない）" : " (freebie — no heart lost)") : txt, col);
+  };
   pSadT = 0.95;
   feverT = 0; feverNext = 10; feverCharge = 0;
   sfx.miss();
-  if (kind === "squash") { say(T().tipSquash, "#ffb08a"); sfx.squash(); }
-  else if (kind === "unripe") say(T().tipUnripe, "#ffe08a");
-  else if (kind === "half") say(T().tipHalf, "#ffd28a");
-  else if (kind === "overripe") say(T().tipOver, "#e8a0a0");
-  else if (kind === "damaged") say(T().tipDamaged, "#ffb08a");
-  else if (kind === "bug") { say(T().bugTip, "#d8b0ff"); sfx.bug(); }
-  else say(T().tipDropRipe, "#ffb08a");
-  if (misses >= 3) gameOver();
+  if (kind === "squash") { sayM(T().tipSquash, "#ffb08a"); sfx.squash(); }
+  else if (kind === "unripe") sayM(T().tipUnripe, "#ffe08a");
+  else if (kind === "half") sayM(T().tipHalf, "#ffd28a");
+  else if (kind === "overripe") sayM(T().tipOver, "#e8a0a0");
+  else if (kind === "damaged") sayM(T().tipDamaged, "#ffb08a");
+  else if (kind === "bug") { sayM(T().bugTip, "#d8b0ff"); sfx.bug(); }
+  else sayM(T().tipDropRipe, "#ffb08a");
+  if (heartLoss >= 3) gameOver();
 }
 
 // v8: the ripening rush — a broad patch of the field surges toward ripe
@@ -1929,6 +1945,7 @@ function startHarvest(kind) {
   if (!bootDone) return;   // v16 fix: same boot gate as startGame
   ac(); bgmStart();
   dayCaught = 0; dayDodged = 0; dayMiss = 0;
+  freeMissUsed = false;   // v19: a new day, a new free miss
   items = []; pops = []; corpses = [];
   fruitingToday = {};
   farm.plots.forEach(function (p) {
@@ -2245,7 +2262,7 @@ function drawHUD() {
   }
   ctx.textAlign = "right";
   for (let i = 0; i < 3; i++) {
-    ctx.fillStyle = i < (3 - misses) ? "#ff5b7f" : "rgba(255,255,255,.35)";
+    ctx.fillStyle = i < (3 - heartLoss) ? "#ff5b7f" : "rgba(255,255,255,.35)";
     ctx.font = "22px sans-serif";
     ctx.fillText("♥", W - 14 - i * 26, 62);
   }
@@ -2630,7 +2647,10 @@ function pickFruit(f, who) {
   } else {
     if (dist > 150) squashP += (dist - 150) / 2400;
     if (basketSpeed > 160) squashP += (basketSpeed - 160) / 1600;
-    if (rainingNow()) squashP += 0.07;
+    // v19: rain-slick hands only matter while the basket is actually
+    // moving. Standing still at the plant, a careful pick never
+    // squashes — rain or not, the same promise as the dry rule.
+    if (rainingNow() && basketSpeed > 60) squashP += 0.07;
     const hv = f.variety ? f.variety.hardy : 2;
     squashP *= (1 - (hv - 1) * 0.17);
     squashP = clamp(squashP, 0, 0.6);
@@ -2788,6 +2808,7 @@ function catchGoldFruit(fl) {
   burstStars(basketX, basketY - 26, 12);
   if (playKind === "versus") { vsYou += gain; versusLeadCheck(); rSadT = Math.max(rSadT, 0.8); if (Math.random() < 0.4) rivalSay("gonPlayerBest"); }
   if (misses > 0) { misses--; }
+  if (heartLoss > 0) { heartLoss--; }   // v19: the gold tomato also refunds a spent heart
   markZukan("gold");
   unlock("gold");
   if (!farm.goldLineShown) {
@@ -2841,7 +2862,10 @@ function updateRival(dt) {
     const tgt = fruits.find(function (f) { return f.id === rival.targetFruitId; });
     if (tgt) { rival.targetX = tgt.x; rival.targetY = tgt.y + 58; }
   }
-  const spd = Math.min(470 + (season - 1) * 30, (290 + absDay() * 13 + (season - 1) * 22) * (diff === "hard" ? 1.15 : diff === "easy" ? 0.8 : 1));
+  // v19: in season 1 only, Gon walks a touch slower (x0.9) so a first
+  // versus season is less of a wall; from season 2 he is as before.
+  const gonSeasonMul = season === 1 ? 0.9 : 1;
+  const spd = Math.min(470 + (season - 1) * 30, (290 + absDay() * 13 + (season - 1) * 22) * (diff === "hard" ? 1.15 : diff === "easy" ? 0.8 : 1)) * gonSeasonMul;
   const dx = rival.targetX - rival.x, dy = rival.targetY - rival.y;
   const d = Math.hypot(dx, dy);
   if (d > 2) {
@@ -4144,7 +4168,7 @@ window.__onH3dReady = function () {
 window.__state = function () {
   return {
     mode: mode, playKind: playKind, vsFinal: vsFinal, score: score, day: day, season: season,
-    dayCaught: dayCaught, misses: misses, vsYou: vsYou, vsRivalVal: vsRivalVal, vsT: vsT,
+    dayCaught: dayCaught, misses: misses, heartLoss: heartLoss, freeMissUsed: freeMissUsed, vsYou: vsYou, vsRivalVal: vsRivalVal, vsT: vsT,
     camX: Math.round(camX), money: farm.money, tools: Object.assign({}, farm.tools),
     orders: farm.orders, challenge: farm.challenge,
     day9: { squash: daySquash, best: dayBest, gold: dayGold, rushPicks: dayRushPicks, crowStolen: dayCrowStolen, maxCombo: dayMaxCombo },
