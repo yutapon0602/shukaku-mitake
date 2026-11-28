@@ -135,6 +135,25 @@
     box-shadow:0 3px 8px rgba(60,35,0,.35);
     pointer-events:none;
   }
+  /* v20: FPS crosshair (shown only while the pointer is locked in
+     play) and the re-lock hint shown to mouse users out of lock */
+  #crosshair {
+    position:absolute; left:50%; top:50%; width:22px; height:22px;
+    transform:translate(-50%,-50%); z-index:6; display:none; pointer-events:none;
+    border:2px solid rgba(255,255,255,.88); border-radius:50%;
+    box-shadow:0 0 4px rgba(0,0,0,.65), inset 0 0 4px rgba(0,0,0,.35);
+  }
+  #crosshair::after {
+    content:""; position:absolute; left:50%; top:50%; width:4px; height:4px;
+    transform:translate(-50%,-50%); border-radius:50%;
+    background:rgba(240,86,58,.95); box-shadow:0 0 3px rgba(0,0,0,.6);
+  }
+  #lockHint {
+    position:absolute; left:50%; bottom:11%; transform:translateX(-50%);
+    z-index:6; display:none; pointer-events:none; white-space:nowrap;
+    background:rgba(40,26,10,.55); color:#fff8ea; font-size:13px; font-weight:700;
+    padding:7px 16px; border-radius:999px; letter-spacing:.02em;
+  }
   #toast {
     position:absolute; left:50%; top:118px; transform:translate(-50%,-16px);
     background:linear-gradient(180deg,#ffe97a,#ffc93c); color:#7a5200;
@@ -265,6 +284,8 @@
     <button id="langBtn" type="button">EN</button>
     <div id="toast"></div>
     <div id="stick"><div id="stickKnob"></div></div>
+    <div id="crosshair"></div>
+    <div id="lockHint"></div>
 
     <div class="overlay top" id="titleScreen">
       <div class="sign">
@@ -272,7 +293,7 @@
         <div class="en">HARVEST SORT PATROL</div>
       </div>
       <div class="panel">
-        <div id="howto">畑の株でトマトが育つ。<b>完熟（真っ赤）になった実</b>のそばまで歩いて、タップして収穫しよう（遠くからでは手が届かない）。完熟直後の「ベスト」収穫で高得点。畑で種を植えて育て、交配で新しい品種を作り、秋の品評会で入賞を目指そう。ベスト収穫をつなげてフィーバー！（左下のスティックで歩き、画面の右半分をドラッグして見回そう。PC: WASD・矢印キーで移動、マウスドラッグで見回し、クリックかスペースキーで収穫）</div>
+        <div id="howto">畑の株でトマトが育つ。<b>完熟（真っ赤）になった実</b>のそばまで歩いて、タップして収穫しよう（遠くからでは手が届かない）。完熟直後の「ベスト」収穫で高得点。畑で種を植えて育て、交配で新しい品種を作り、秋の品評会で入賞を目指そう。ベスト収穫をつなげてフィーバー！（左下のスティックで歩き、画面の右半分をドラッグして見回そう。PC: クリックでマウス操作開始、マウスで見回し、WASDで移動、照準を合わせてクリック／スペースキーで収穫）</div>
         <div class="legend">
           <div><span class="dot ripe"></span><span id="lgRipe">熟した赤 = 取る</span></div>
           <div><span class="dot unripe"></span><span id="lgUnripe">青い = よける</span></div>
@@ -281,7 +302,7 @@
           <div><span class="dot damaged"></span><span id="lgDamaged">傷んだ = よける</span></div>
           <div><span class="dot gold"></span><span id="lgGold">金のトマト = 必ず取る</span></div>
         </div>
-        <div id="controls">左下のスティックで歩き、画面の右半分をドラッグして見回し、実のそばでタップ／クリック／スペースキーで収穫します</div>
+        <div id="controls">左下のスティックで歩き、画面の右半分をドラッグして見回し、実のそばでタップ／クリック／スペースキーで収穫します（PC: クリックでマウス操作開始、マウスで見回し、WASDで移動、照準を合わせて収穫）</div>
       </div>
       <div class="farmerRow">
         <canvas class="farmerCv" id="farmerTitle" width="96" height="96"></canvas>
@@ -462,7 +483,7 @@
       </div>
     </div>
   </div>
-  <div id="credit">しゅうかく見分け隊 v19 — Ap Robo Educational LLC — Kiroween 2026 / Costume Contest</div>
+  <div id="credit">しゅうかく見分け隊 v20 — Ap Robo Educational LLC — Kiroween 2026 / Costume Contest</div>
 </div>
 <script>
 "use strict";
@@ -513,10 +534,11 @@ const STR = {
   ja: {
     title: "しゅうかく見分け隊", over: "しゅうかく終了！", start: "スタート", retry: "もう一度",
     continue: "つづきから", newGame: "はじめから",
-    howto: "畑の株でトマトが育つ。画面は<b>あなたの目線（一人称）</b>。<b>完熟（真っ赤）になった実</b>のそばまで歩いて、目の前の実をタップして収穫しよう（遠くからでは手が届かない）。完熟直後の「ベスト」収穫で高得点。畑で種を植えて育て、交配で新しい品種を作り、秋の品評会で入賞を目指そう。ベスト収穫をつなげてフィーバー！（左下のスティックで歩き、画面の右半分をドラッグして見回そう。PC: WASD・矢印キーで移動、マウスドラッグで見回し、クリックかスペースキーで収穫）",
+    howto: "畑の株でトマトが育つ。画面は<b>あなたの目線（一人称）</b>。<b>完熟（真っ赤）になった実</b>のそばまで歩いて、目の前の実をタップして収穫しよう（遠くからでは手が届かない）。完熟直後の「ベスト」収穫で高得点。畑で種を植えて育て、交配で新しい品種を作り、秋の品評会で入賞を目指そう。ベスト収穫をつなげてフィーバー！（左下のスティックで歩き、画面の右半分をドラッグして見回そう。PC: クリックでマウス操作開始、マウスで見回し、WASDで移動、照準を合わせてクリック／スペースキーで収穫）",
     lgRipe: "完熟 = 取る", lgUnripe: "青い = まだ待つ", lgHalf: "色づき途中 = 待つ",
     lgOver: "過熟 = 安値で出荷", lgDamaged: "傷んだ = 取らない", lgGold: "金のトマト = 必ず取る",
-    controls: "一人称の目線で、左下のスティックを倒して歩き、画面の右半分をドラッグして見回します。目の前の実をタップ／クリック／スペースキーで収穫します（PCはWASD・矢印キーでも移動できます）",
+    controls: "一人称の目線で、左下のスティックを倒して歩き、画面の右半分をドラッグして見回します。目の前の実をタップ／クリック／スペースキーで収穫します（PC: クリックでマウス操作開始、マウスで見回し、WASDで移動、照準を合わせてクリック／スペースキーで収穫）",
+    lockHint: "クリックするとマウスで見回せます",
     score: "スコア", best: "ベスト",
     caught: "収穫数", good: "見逃し正解", miss: "ミス",
     accuracy: "正解率", maxCombo: "最大コンボ", days: "到達日数",
@@ -626,10 +648,11 @@ const STR = {
   en: {
     title: "Harvest Sort Patrol", over: "Harvest Complete!", start: "START", retry: "Play Again",
     continue: "Continue", newGame: "New Game",
-    howto: "Tomatoes grow on the plants in your field. You see the field <b>through your own eyes (first person)</b>. Walk right up to a <b>fully ripe (deep red) fruit</b> and tap the fruit in front of you to pick it — your arms can't reach from far away. Pick right after ripening for a PERFECT bonus. Plant and raise seeds, cross varieties to breed new ones, and aim for a prize at the autumn harvest fair. Chain perfect picks for FEVER! (Walk with the stick at the lower left, and drag the right side of the screen to look around. PC: WASD / arrow keys to walk, mouse drag to look, click or Space to pick.)",
+    howto: "Tomatoes grow on the plants in your field. You see the field <b>through your own eyes (first person)</b>. Walk right up to a <b>fully ripe (deep red) fruit</b> and tap the fruit in front of you to pick it — your arms can't reach from far away. Pick right after ripening for a PERFECT bonus. Plant and raise seeds, cross varieties to breed new ones, and aim for a prize at the autumn harvest fair. Chain perfect picks for FEVER! (Walk with the stick at the lower left, and drag the right side of the screen to look around. PC: click to start mouse control, move the mouse to look, WASD to walk, aim the crosshair and click / Space to pick.)",
     lgRipe: "Ripe = PICK", lgUnripe: "Green = WAIT", lgHalf: "Half-colored = WAIT",
     lgOver: "Overripe = CHEAP", lgDamaged: "Damaged = DON'T PICK", lgGold: "Golden = ALWAYS PICK",
-    controls: "First-person view: tilt the stick at the lower left to walk, drag the right side of the screen to look around; tap, click, or press Space to pick the fruit in front of you (PC: WASD / arrow keys and mouse drag work too)",
+    controls: "First-person view: tilt the stick at the lower left to walk, drag the right side of the screen to look around; tap, click, or press Space to pick the fruit in front of you (PC: click to start mouse control, mouse to look, WASD to walk, aim and click / Space to pick)",
+    lockHint: "Click to look around with the mouse",
     score: "SCORE", best: "BEST",
     caught: "Harvested", good: "Good dodges", miss: "Misses",
     accuracy: "Accuracy", maxCombo: "Max combo", days: "Days reached",
@@ -3291,6 +3314,17 @@ function frame(ts) {
     const wantStick = mode === "play" ? "block" : "none";
     if (stickEl.style.display !== wantStick) stickEl.style.display = wantStick;
   }
+  // v20: the crosshair rides only while pointer-locked in play;
+  // the re-lock hint is for mouse users in play out of lock.
+  // Leaving play (a day ends under the lock, say) hands the
+  // mouse back instead of stranding it on a menu screen.
+  if (ptrLocked && mode !== "play" && document.exitPointerLock) document.exitPointerLock();
+  if (crosshairEl) {
+    const wantCross = ptrLocked && mode === "play" ? "block" : "none";
+    if (crosshairEl.style.display !== wantCross) crosshairEl.style.display = wantCross;
+    const wantHint = !ptrLocked && mode === "play" && finePointer ? "block" : "none";
+    if (lockHintEl.style.display !== wantHint) lockHintEl.style.display = wantHint;
+  }
   const ready3d = typeof window.__h3dReady === "function" && window.__h3dReady();
   const use3d = mode === "play" && ready3d;
   // v10: title / story / result / ending screens get their own 3D scenes
@@ -3564,32 +3598,95 @@ function h3dInput() {
 // last client x seen — movement of THAT pointer (and no other)
 // turns the first-person view.
 let viewDrag = null;
+// Resolve one __h3dPickAt result (a tap point, or the crosshair
+// centre while pointer-locked): true when the press was spent on a
+// fruit, a sitting pest or the crow. Ground / nothing returns
+// false — the press goes on to look duty instead.
+function resolveH3dPick(pick) {
+  if (!pick) return false;
+  if (pick.hit === "fruit") {
+    const f = fruits.find(function (fr) { return fr.id === pick.id; });
+    if (f) { pickFruit(f, "you"); return true; }
+  } else if (pick.hit === "bug") {
+    const b = bugs.find(function (bg) { return bg.id === pick.id; });
+    if (b && b.state === "sit") {
+      // v14: same reach rule as fruit — walk up to the plant first
+      if (b.plant && groundDistTo(b.plant.x, b.plant.y, basketX, basketY) > REACH) {
+        tooFarFeedback(fruits.find(function (fr) { return fr.plant === b.plant; }) || null);
+      } else shooBug(b);
+      return true;
+    }
+  } else if (pick.hit === "crow") {
+    if (crow && crow.state !== "leave") { scareCrow(); return true; }
+  }
+  return false;
+}
+// ---------- v20: pointer lock — the FPS way to look (PC only) ----
+// The user, playing v19 on his PC, found the mouse barely answered:
+// looking around was a v17 drag (press, haul, release, repeat),
+// which no modern FPS asks of anyone. Now a mouse press on empty
+// ground locks the pointer to the canvas; from then on the mouse
+// itself turns the eye (yaw AND pitch, instantly — __h3dLook moves
+// heading and target together, so there is no easing to wait for),
+// the cursor hides, a crosshair rides the screen centre, and a
+// click picks whatever the crosshair is on. Esc hands the mouse
+// back (browser rule); the hint painted under the field offers the
+// lock again. Touch keeps the stick + drag + tap exactly as v17
+// made them, and an unlocked mouse keeps the v17 click-to-pick and
+// drag-to-look as a fallback.
+const finePointer = !!(window.matchMedia && window.matchMedia("(pointer: fine)").matches);
+const MOUSE_SENS = 0.0023;   // rad per pixel of mouse travel
+let ptrLocked = false;
+const crosshairEl = document.getElementById("crosshair");
+const lockHintEl = document.getElementById("lockHint");
+document.addEventListener("pointerlockchange", function () {
+  ptrLocked = document.pointerLockElement === cv;
+});
+document.addEventListener("pointerlockerror", function () { ptrLocked = false; });
+document.addEventListener("mousemove", function (e) {
+  if (!ptrLocked || mode !== "play") return;
+  if (typeof window.__h3dLook !== "function") return;
+  const mx = e.movementX || 0, my = e.movementY || 0;
+  // mouse right turns right (the yaw falls — the heading convention
+  // since v17); mouse up looks up (the pitch rises)
+  if (mx !== 0 || my !== 0) window.__h3dLook(-mx * MOUSE_SENS, -my * MOUSE_SENS);
+});
+function requestMouseLock() {
+  if (!cv.requestPointerLock) return false;
+  try {
+    const r = cv.requestPointerLock();
+    // Chrome answers with a promise that rejects when a re-lock
+    // comes too soon after an Esc exit — that is the browser's
+    // cooldown, not an error worth logging; the next click retries
+    if (r && typeof r.catch === "function") r.catch(function () {});
+    return true;
+  } catch (err) { return false; }
+}
+// While locked, a shot goes where the eye looks: the fruit nearest
+// the screen-centre ray, judged by the very same REACH rule as a
+// tap (pickFruit wobbles it and says so when the arm is short).
+// Nothing under the crosshair is a whiff, not a mistake.
+function crosshairPick() {
+  if (!h3dInput()) return;
+  resolveH3dPick(window.__h3dPickAt(W / 2, H / 2));
+}
+window.__ptrLock = function () { return { locked: ptrLocked, fine: finePointer }; };
 cv.addEventListener("pointerdown", function (e) {
   pointerDown = true;
   if (mode !== "play") return;
+  // v20: while locked, the click fires at the crosshair — the real
+  // cursor is hidden and its frozen coordinates mean nothing
+  if (ptrLocked) { crosshairPick(); return; }
   const p = pointerPos(e.clientX, e.clientY);
   if (h3dInput()) {
     const pick = window.__h3dPickAt(p.x, p.y);
-    if (pick) {
-      if (pick.hit === "fruit") {
-        const f = fruits.find(function (fr) { return fr.id === pick.id; });
-        if (f) { pickFruit(f, "you"); return; }
-      } else if (pick.hit === "bug") {
-        const b = bugs.find(function (bg) { return bg.id === pick.id; });
-        if (b && b.state === "sit") {
-          // v14: same reach rule as fruit — walk up to the plant first
-          if (b.plant && groundDistTo(b.plant.x, b.plant.y, basketX, basketY) > REACH) {
-            tooFarFeedback(fruits.find(function (fr) { return fr.plant === b.plant; }) || null);
-          } else shooBug(b);
-          return;
-        }
-      } else if (pick.hit === "crow") {
-        if (crow && crow.state !== "leave") { scareCrow(); return; }
-      }
-      // ground (or a hit that resolved to nothing): fall through —
-      // the press becomes a view drag, so a tap on empty ground
-      // just looks around and never walks him anywhere.
-    }
+    if (resolveH3dPick(pick)) return;
+    // ground (or a hit that resolved to nothing): a mouse press
+    // here takes the pointer lock (v20) instead of starting a
+    // drag; where lock is unavailable the v17 view drag remains,
+    // so a tap on empty ground just looks around and never walks
+    // him anywhere. Touch always keeps the drag.
+    if (e.pointerType === "mouse" && finePointer && requestMouseLock()) return;
     if (!viewDrag) {
       viewDrag = { id: e.pointerId, lastX: e.clientX };
       // keep the drag's moves coming even if the pointer slides off
@@ -3642,7 +3739,11 @@ window.addEventListener("keydown", function (e) {
   keysDown[e.code] = true;
   if (mode !== "play") return;
   if (e.code === "ArrowLeft" || e.code === "ArrowRight" || e.code === "ArrowUp" || e.code === "ArrowDown" || e.code === "Space") e.preventDefault();
-  if (!e.repeat && (e.code === "Space" || e.code === "KeyE")) harvestKeyPick();
+  if (!e.repeat && (e.code === "Space" || e.code === "KeyE")) {
+    // v20: locked, Space / E fire at the crosshair like a click;
+    // unlocked they keep the v15 nearest-ripe-in-reach behaviour
+    if (ptrLocked) crosshairPick(); else harvestKeyPick();
+  }
 });
 window.addEventListener("keyup", function (e) { keysDown[e.code] = false; });
 window.addEventListener("blur", function () { for (const k in keysDown) keysDown[k] = false; });
@@ -4063,6 +4164,7 @@ function applyLang() {
   document.getElementById("lgDamaged").textContent = t.lgDamaged;
   document.getElementById("lgGold").textContent = t.lgGold;
   document.getElementById("controls").textContent = t.controls;
+  document.getElementById("lockHint").textContent = t.lockHint;
   document.getElementById("retryBtn").textContent = t.retry;
   document.getElementById("nextDayBtn").textContent = t.toFarm;
   document.getElementById("nextSeasonBtn").textContent = t.nextSeason;
@@ -5010,7 +5112,7 @@ function init() {
       followX: Math.round(camFollow.x), followZ: Math.round(camFollow.z),
       pYaw: charP ? Math.round(charP.rotation.y * 100) / 100 : null,
       rYaw: charR ? Math.round(charR.rotation.y * 100) / 100 : null,
-      fp: fpOn, fpYaw: Math.round(fpYaw * 100) / 100,
+      fp: fpOn, fpYaw: Math.round(fpYaw * 100) / 100, fpPitch: Math.round(fpPitch * 1000) / 1000,
       bodyHidden: fpOn, viewBasket: !!(basketP && basketP.parent === camera)
     };
   };
@@ -5022,6 +5124,7 @@ function init() {
   // the chase swung the view around on every strafe, which is what
   // "the character won't go where I point him" actually was.
   let fpYaw = Math.PI, fpYawT = Math.PI, bobPh = 0, fpOn = false;
+  let fpPitch = 0;   // v20: mouse-look pitch (rad; + looks up), clamped in __h3dLook
   // v17: the heading is the player's. The game script reads it to
   // make every drive input view-relative, and turns it when a drag
   // crosses the field. A manual turn moves the target AND the
@@ -5033,6 +5136,19 @@ function init() {
     fpYaw += dyaw;
     fpYawT += dyaw;
   };
+  // v20: pointer-lock mouse look. Yaw moves heading and target
+  // together (the __h3dTurnView way), so the view answers the
+  // mouse in the very same frame — no easing left to lag behind
+  // it. Pitch is new (drags never had one) and clamped to
+  // [-0.5, +0.45] rad: enough to look down at the basket row and
+  // up at a diving crow, never enough to flip or lose the field.
+  window.__h3dLook = function (dyaw, dpitch) {
+    if (!ready) return;
+    fpYaw += dyaw;
+    fpYawT += dyaw;
+    fpPitch = Math.max(-0.5, Math.min(0.45, fpPitch + (dpitch || 0)));
+  };
+  window.__h3dViewPitch = function () { return ready ? fpPitch : null; };
   // Entering play: the picker's own body leaves the frame (a real
   // first-person view has no back to look at) and his basket is
   // re-parented to the camera, riding low in the frame like a basket
@@ -5040,7 +5156,7 @@ function init() {
   function enterFPView() {
     if (fpOn || !charP || !basketP) return;
     fpOn = true;
-    fpYaw = Math.PI; fpYawT = Math.PI;   // v17: every harvest starts facing into the field
+    fpYaw = Math.PI; fpYawT = Math.PI; fpPitch = 0;   // v17: every harvest starts facing into the field (v20: level pitch too)
     if (!basketP.userData.homePos) {
       basketP.userData.homePos = basketP.position.clone();
       basketP.userData.homeScale = basketP.scale.x;
@@ -5162,7 +5278,7 @@ function init() {
     const pCharZ = depthZ(pFeetGY) + 104;
     if (!camFollow.on || Math.hypot(pb.x - camFollow.x, pCharZ - camFollow.z) > 720) {
       camFollow.x = pb.x; camFollow.z = pCharZ; camFollow.on = true;
-      fpYaw = Math.PI; fpYawT = Math.PI;
+      fpYaw = Math.PI; fpYawT = Math.PI; fpPitch = 0;
     }
     const ck = 1 - Math.exp(-dt * 9);
     camFollow.x += (pb.x - camFollow.x) * ck;
@@ -5185,7 +5301,11 @@ function init() {
     const eyeY = 93 + bobY;
     camera.position.set(camFollow.x, eyeY, camFollow.z);
     if (camera.fov !== 66) { camera.fov = 66; camera.updateProjectionMatrix(); }
-    camera.lookAt(camFollow.x + Math.sin(fpYaw) * 260, eyeY - 36 + bobY * 0.5, camFollow.z + Math.cos(fpYaw) * 260);
+    // v20: the pitch leans the look target up / down around the
+    // v16 baseline tilt (at level pitch the target is exactly the
+    // old one: 260 ahead, 36 down)
+    const cpP = Math.cos(fpPitch);
+    camera.lookAt(camFollow.x + Math.sin(fpYaw) * cpP * 260, eyeY - 36 + Math.sin(fpPitch) * 260 + bobY * 0.5, camFollow.z + Math.cos(fpYaw) * cpP * 260);
     aimSun(camFollow.x, camFollow.z);
     if (snap.fieldKey !== propsKey) buildProps(snap);
     // the decorative backdrop rows are culled to the camera's slice too
